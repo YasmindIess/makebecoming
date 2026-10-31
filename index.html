@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FORGE / Truthful Latency V2.1</title>
+<meta name="description" content="A replayable, content-addressed omission observatory: historical latency, counterfactuals, real basin detection and JSONL evidence.">
+<style>
+:root{color-scheme:dark;--bg:#080b13;--panel:#111523;--muted:#a0abc5;--ink:#edf1fa;--gold:#e8bb74;--violet:#b39af6;--cyan:#74ded6;--line:#30374e}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden}
+button,select,input{font:inherit}button,select{color:var(--ink);background:#1d2233;border:1px solid #484a65;border-radius:7px;padding:7px 11px;cursor:pointer}button:hover{border-color:var(--gold)}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}button:disabled{opacity:.38;cursor:not-allowed}button.major{background:#70512e;border-color:#d5aa65;color:#fff3da;font-weight:700}button.secondary{background:#25203b}input[type=range]{accent-color:var(--gold);width:112px}input[type=checkbox]{accent-color:var(--violet)}
+.app{height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0}
+header{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap;padding:10px 20px;border-bottom:1px solid var(--line);background:#0b0e19;z-index:2}
+.brand{margin-right:auto;display:flex;flex-direction:column;gap:2px;min-width:220px}.brand strong{font-size:17px;letter-spacing:.13em;color:var(--gold)}.brand small{color:var(--muted);letter-spacing:.11em;font-size:10px}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.ctl{display:flex;align-items:center;gap:7px;color:#d0d5e5;font-size:12px}.ctl output{font-variant-numeric:tabular-nums;color:var(--gold);min-width:25px}.actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.space{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 285px}.viz{position:relative;min-width:0;min-height:0;overflow:hidden;background:#080a16}svg{display:block;width:100%;height:100%}svg text{font-family:system-ui,-apple-system,sans-serif}aside{overflow:auto;border-left:1px solid var(--line);background:linear-gradient(180deg,#131728,#0d1120);padding:16px;display:flex;flex-direction:column;gap:12px}aside h2{font-size:13px;margin:0;letter-spacing:.12em;color:var(--gold)}aside h3{margin:0;font-size:12px;letter-spacing:.09em;color:#dbdff2}.hint{font-size:11px;color:var(--muted);line-height:1.6}.divider{border-top:1px solid var(--line);margin:2px 0}.kv{display:grid;grid-template-columns:94px minmax(0,1fr);gap:7px 8px;font-size:12px}.kv span:nth-child(odd){color:var(--muted)}.kv span:nth-child(even){overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.hash{font-family:ui-monospace,monospace;font-size:10px;color:var(--cyan)}.basin{padding:9px;border:1px solid #454267;border-radius:8px;background:#1b1a32}.basin strong{color:#e9c68c}.basin p{margin:4px 0 0;font-size:11px;color:var(--muted)}.inspect-nav{display:flex;justify-content:space-between;align-items:center;gap:4px}.inspect-nav button{padding:5px 9px}.pill{font-size:10px;letter-spacing:.08em;border:1px solid #5f6b85;border-radius:30px;padding:4px 8px;color:#d7e0f0}.pill.good{border-color:#568f83;color:#90e8d7}
+footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 18px;border-top:1px solid var(--line);color:#afbbce;background:#0a0d18;font-size:11px;min-height:40px}footer .log{font-family:ui-monospace,monospace;color:#e8c687;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}footer .note{text-align:right}#file{display:none}
+@media(max-width:960px){.space{grid-template-columns:minmax(0,1fr) 245px}aside{padding:10px}.brand{min-width:180px}header{padding:8px 12px}}
+@media(max-width:690px){.app{grid-template-rows:auto minmax(0,1fr) auto}.space{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,33%)}aside{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:auto;padding:8px 12px}aside h2,.hint,.divider{display:none}.kv{font-size:10px;grid-template-columns:70px minmax(0,1fr);gap:4px}.basin{padding:5px}.basin p{font-size:10px}header{gap:6px 10px}.brand{width:100%;margin:0}.brand strong{font-size:14px}.brand small{display:none}.ctl{font-size:10px}.ctl input[type=range]{width:74px}.actions{gap:3px}.actions button{padding:5px 7px;font-size:11px}footer{padding:4px 10px;min-height:29px}footer .note{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+ <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.1 · TRUTHFUL LATENCY / RECONSTRUCTIBLE EVIDENCE</small></div>
+ <div class="controls">
+  <label class="ctl">λ <input id="lat" type="range" min="0" max="100" value="43"><output id="latv">43</output></label>
+  <label class="ctl">REGEN <input id="regen" type="range" min="0" max="100" value="62"><output id="regv">62</output></label>
+  <label class="ctl">VIEW <select id="view"><option value="historical">Historical</option><option value="counterfactual">Counterfactual</option></select></label>
+  <label class="ctl">BASIN <select id="basin"><option value="auto">Auto / lowest</option><option value="left">Left</option><option value="right">Right</option></select></label>
+ </div>
+ <div class="actions"><button class="major" id="step">MAKE BECOMING</button><button id="export">Export JSONL</button><button id="import">Import</button><input id="file" type="file" accept=".jsonl,.ndjson,application/x-ndjson,text/plain"><button id="verify">Verify</button><button id="reset">Clear</button></div>
+</header>
+<div class="space">
+ <section class="viz" aria-label="Interactive omission geometry and confluent minima">
+ <svg id="scene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Omission origin, historical latency, first divergence, descendant trajectories and two calculated local minima">
+ <defs><radialGradient id="bg"><stop stop-color="#1d1739"/><stop offset=".58" stop-color="#0d1020"/><stop offset="1" stop-color="#060811"/></radialGradient><linearGradient id="ribbon"><stop stop-color="#9b84db"/><stop offset=".52" stop-color="#ddac6a"/><stop offset="1" stop-color="#6bd6d0"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#8e8ca8" stroke-opacity=".12"/></pattern></defs>
+ <rect width="1400" height="790" fill="url(#bg)"/><rect width="1400" height="790" fill="url(#grid)"/>
+ <g opacity=".17"><path d="M0 220 L1400 220 M0 384 L1400 384 M0 550 L1400 550" stroke="#c0a4f8" stroke-dasharray="3 13"/></g>
+ <g id="ribbons"></g><g id="nodes"></g><g id="events"></g>
+ <g pointer-events="none"><text x="45" y="52" fill="#e5c78f" font-size="24" letter-spacing="3">ΔH = ⟨ o, λ, b, Γ ⟩</text><text x="47" y="81" fill="#a6a9c5" font-size="12" letter-spacing="2">ORIGIN · LATENCY · FIRST DIVERGENCE · DESCENDANT CONSEQUENCES</text><text x="45" y="748" fill="#b89de9" font-size="14" letter-spacing="2">ORIGIN</text><text x="540" y="748" fill="#eac485" font-size="14" letter-spacing="2">DIVERGENCE</text><text x="1090" y="748" fill="#87e5db" font-size="14" letter-spacing="2">RECONCILIATION</text><text x="45" y="773" fill="#8b98b5" font-size="11">FIXED EVENTS · REVISABLE PROJECTIONS</text></g><g id="mathlabels"></g>
+ </svg>
+ </section>
+ <aside aria-label="Evidence and computed minima inspector">
+  <h2>INSPECT / EVIDENCE</h2><div class="inspect-nav"><button id="prev" aria-label="Previous historical event">◀</button><span id="selection" class="pill">No events</span><button id="next" aria-label="Next historical event">▶</button></div>
+  <div class="kv"><span>Knowledge</span><span id="knowledge">0 / 0</span><span>Recorded λ</span><span id="recordlambda">—</span><span>Recorded b</span><span id="recordb">—</span><span>Original o</span><span id="recordo">—</span><span>Γ descendants</span><span id="recordgamma">—</span><span>SHA-256</span><span id="recordhash" class="hash">—</span><span>Parent</span><span id="recordparent" class="hash">—</span></div>
+  <div class="divider"></div>
+  <h3>CONFLUENT ENERGY</h3><div id="minima" class="basin"><strong>Awaiting first event</strong><p>Local minima will be calculated from the finite potential over the active event field.</p></div>
+  <div class="divider"></div><h3>CLAIM BOUNDARY</h3><p id="interpret" class="hint">The event journal represents a simulated mathematical process. Records are immutable in this session; measurements of the external world are not asserted.</p>
+  <p class="hint">SHA-256 hashes are domain-separated record digests, not IPFS CIDs, digital signatures, or proof of physical occurrence. No network access or hidden persistence.</p>
+ </aside>
+</div>
+<footer><span class="log" id="status" role="status">Initializing local evidence engine…</span><span class="note">SVG is a projection of the journal · local browser execution only</span></footer>
+</div>
+<script>
+(()=>{'use strict';
+const NS='http://www.w3.org/2000/svg', $=id=>document.getElementById(id);
+const STRANDS=17, BASE_Y=400, MAX_EVENTS=250, DOMAIN='FORGE/OMISSION/V3\n';
+let records=[], visible=0, seqSelected=0, busy=false, lastMinima=[];
+const colors=['#e9be7b','#b6a1f0','#76d9d3'];
+function svg(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));parent.appendChild(e);return e;}
+function clamp(n,a,b){return Math.min(b,Math.max(a,n));}
+function smooth(a,b,x){const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);}
+function status(message){$('status').textContent=message;}
+function fmt(n){return Number(n).toFixed(2);}
+function assert(cond,msg){if(!cond)throw Error(msg);}
+// Restricted deterministic canonical encoding: schemas contain ASCII strings, booleans,
+// integer-valued numbers, arrays and plain objects only. NOT a general RFC 8785 library.
+function canon(v){if(v===null)return 'null';if(typeof v==='string')return JSON.stringify(v);if(typeof v==='boolean')return v?'true':'false';if(typeof v==='number'){assert(Number.isSafeInteger(v),'Non-integer is not canonical');return JSON.stringify(v);}if(Array.isArray(v))return '['+v.map(canon).join(',')+']';assert(v&&typeof v==='object'&&Object.getPrototypeOf(v)===Object.prototype,'Unsupported record value');const keys=Object.keys(v).sort();return '{'+keys.map(k=>{assert(/^[a-z0-9_]+$/.test(k),'Bad field');return JSON.stringify(k)+':'+canon(v[k]);}).join(',')+'}';}
+function hex(buffer){return Array.from(new Uint8Array(buffer),x=>x.toString(16).padStart(2,'0')).join('');}
+async function digest(body){assert(globalThis.crypto?.subtle,'Web Crypto SHA-256 unavailable; use localhost or HTTPS');return 'sha256:'+hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(DOMAIN+canon(body))));}
+function nextBody(seq,cfg,parent,simTime){const strand=((seq-1)*7+3)%STRANDS;
+ const x=125+(((seq-1)*53)%230);const strength=38+((seq*19)%38);
+ const affected=Array.from({length:STRANDS},(_,i)=>i).filter(i=>Math.abs(i-strand)<=3);
+ const lambda=cfg.lambda_milli;return {schema:'forge.omission.v3',kind:'omission.simulated',seq,seed:137,model:'forge-confluence.v1',origin_x_milli:x*1000,origin_strand:strand,lambda_milli:lambda,regen_milli:cfg.regen_milli,boundary_x_milli:x*1000+75000+390*lambda,affected_strands:affected,amplitude_milli:strength*1000,sim_time_ms:simTime,parent_hash:parent};
+}
+function currentConfig(){return {lambda_milli:Number($('lat').value)*10,regen_milli:Number($('regen').value)*10};}
+function checkKeys(o,expected){assert(o&&!Array.isArray(o)&&typeof o==='object'&&Object.getPrototypeOf(o)===Object.prototype,'Expected record object');const keys=Object.keys(o).sort().join('|');assert(keys===expected.slice().sort().join('|'),'Record fields mismatch');}
+function validateBody(b,seq,parent){checkKeys(b,['schema','kind','seq','seed','model','origin_x_milli','origin_strand','lambda_milli','regen_milli','boundary_x_milli','affected_strands','amplitude_milli','sim_time_ms','parent_hash']);
+ assert(b.schema==='forge.omission.v3'&&b.kind==='omission.simulated'&&b.seq===seq&&b.seed===137&&b.model==='forge-confluence.v1','Wrong model/schema/sequence');
+ for(const k of ['lambda_milli','regen_milli','sim_time_ms'])assert(Number.isSafeInteger(b[k])&&b[k]>=0,'Invalid '+k);
+ assert(b.lambda_milli<=1000&&b.regen_milli<=1000&&b.sim_time_ms<=1e12,'Out of bounds');
+ assert(b.parent_hash===parent,'Parent hash mismatch');
+ const expect=nextBody(seq,{lambda_milli:b.lambda_milli,regen_milli:b.regen_milli},parent,b.sim_time_ms);
+ assert(canon(expect)===canon(b),'Tampered or inconsistent event calculation');return true;}
+async function verifyRecords(list){let parent=null;for(let i=0;i<list.length;i++){const row=list[i];checkKeys(row,['body','digest']);validateBody(row.body,i+1,parent);assert(typeof row.digest==='string'&&/^sha256:[0-9a-f]{64}$/.test(row.digest),'Invalid digest format');assert(await digest(row.body)===row.digest,'SHA-256 mismatch on event '+(i+1));parent=row.digest;}return true;}
+function cfgFor(row){const override=$('view').value==='counterfactual'&&row===records[seqSelected-1];return override?currentConfig():{lambda_milli:row.body.lambda_milli,regen_milli:row.body.regen_milli};}
+function base(i,x){return BASE_Y+(i-8)*13+Math.sin(x/87+i*.71)*7+Math.cos(x/133+i*.44)*5;}
+function eventInfluence(row,i,x){const b=row.body;if(!b.affected_strands.includes(i))return 0;const c=cfgFor(row);
+ const boundary=b.origin_x_milli/1000+75+390*c.lambda_milli/1000;
+ const onset=smooth(boundary,boundary+118,x), recovery=smooth(boundary+190,boundary+550,x)*c.regen_milli/1000;
+ return (i-b.origin_strand)*(b.amplitude_milli/1000)*.19*onset*(1-recovery)*Math.exp(-Math.max(0,x-1050)/1100);
+}
+function displacement(i,x){let s=0;for(let j=0;j<visible;j++)s+=eventInfluence(records[j],i,x);return s;}
+function dataProfile(){let signed=0,energy=0;for(let i=0;i<STRANDS;i++){const d=displacement(i,1090);signed+=d*(i-8)/8;energy+=d*d;}return {target:clamp(signed/(STRANDS*90),-.8,.8),residual:energy/STRANDS};}
+// Data-dependent, explicitly declared nonconvex surrogate potential. Candidate minima
+// are roots approximated by a finite scan + ternary refinement; no physics claim.
+function energy(q,profile){const stiffness=12+Math.min(9,profile.residual/200);return stiffness*(q*q-.64)**2+4*(q-profile.target)**2+profile.residual*.008;}
+function minima(profile){const samples=400,lo=-1.65,hi=1.65,step=(hi-lo)/samples;let results=[];
+ for(let i=1;i<samples;i++){const q=lo+i*step,y=energy(q,profile);if(y<=energy(q-step,profile)&&y<=energy(q+step,profile)){
+ let a=q-step,b=q+step;for(let j=0;j<45;j++){let c=a+(b-a)/3,d=b-(b-a)/3;if(energy(c,profile)<energy(d,profile))b=d;else a=c;}const m=(a+b)/2;results.push({q:m,e:energy(m,profile)});}}
+ return results.sort((a,b)=>a.q-b.q);}
+function selectedBasin(ms){if(!ms.length)return null;const chosen=$('basin').value;if(chosen==='left')return ms[0];if(chosen==='right')return ms[ms.length-1];return ms.reduce((a,b)=>a.e<=b.e?a:b);}
+function positionY(i,x,q){return base(i,x)+displacement(i,x)+q*11*(i-8)/8*smooth(720,1100,x);}
+const ribbons=$('ribbons'),nodeGroup=$('nodes'),events=$('events'),labels=$('mathlabels');
+const paths=Array.from({length:STRANDS},(_,i)=>svg('path',{fill:'none',stroke:colors[i%3],'stroke-width':i%5===0?2.4:1.2,opacity:i%5===0?.91:.66},ribbons));
+function render(){const cfg=currentConfig();$('latv').textContent=String(cfg.lambda_milli/10);$('regv').textContent=String(cfg.regen_milli/10);
+ $('knowledge').textContent=visible+' / '+records.length;$('selection').textContent=visible?('Event '+seqSelected):'No events';
+ $('prev').disabled=seqSelected<=1;$('next').disabled=seqSelected>=records.length;
+ $('step').disabled=busy||records.length>=MAX_EVENTS;$('import').disabled=busy;$('verify').disabled=busy;
+ const profile=dataProfile(),ms=visible>0?minima(profile):[],chosen=selectedBasin(ms),q=chosen?.q??0;lastMinima=ms;
+ paths.forEach((p,i)=>{let d='';for(let x=95;x<=1325;x+=9){d+=(x===95?'M':'L')+x+' '+positionY(i,x,q);}p.setAttribute('d',d);});
+ nodeGroup.replaceChildren();for(let i=0;i<STRANDS;i++)for(let k=0;k<8;k++){const x=165+k*157+(i%3)*11,y=positionY(i,x,q);svg('circle',{cx:x,cy:y,r:k===4?3.4:1.6,fill:colors[i%3],opacity:.83},nodeGroup);}
+ events.replaceChildren();labels.replaceChildren();
+ const row=records[seqSelected-1];if(row&&row.body.seq<=visible){const b=row.body,o=b.origin_x_milli/1000,recorded=b.boundary_x_milli/1000;const hypothetical=o+75+390*cfg.lambda_milli/1000;const cf=$('view').value==='counterfactual';
+ const marker=(x,color,dash)=>{svg('line',{x1:x,y1:116,x2:x,y2:685,stroke:color,'stroke-width':1.5,'stroke-dasharray':dash,opacity:.85},events);};
+ marker(recorded,'#e6bb77','5 6');if(cf&&Math.abs(hypothetical-recorded)>.1)marker(hypothetical,'#d5a0f9','2 5');
+ const oy=positionY(b.origin_strand,o,q);svg('circle',{cx:o,cy:oy,r:8,fill:'#e8bd75',filter:'url(#glow)'},events);
+ const active=cf?hypothetical:recorded;svg('circle',{cx:active,cy:positionY(b.origin_strand,active,q),r:9,fill:'none',stroke:'#eabb75','stroke-width':2,filter:'url(#glow)'},events);
+ for(const i of b.affected_strands)svg('circle',{cx:1180,cy:positionY(i,1180,q),r:3.3,fill:'#85ebe3'},events);
+ svg('text',{x:clamp(recorded+12,100,1085),y:135,fill:'#eacc95','font-size':13},labels).textContent='recorded b='+fmt(recorded);
+ if(cf)svg('text',{x:clamp(hypothetical+12,100,1085),y:155,fill:'#d8b5ff','font-size':12},labels).textContent='hypothesis b='+fmt(hypothetical);
+ $('recordlambda').textContent=(b.lambda_milli/1000).toFixed(3)+' (immutable)';$('recordb').textContent=fmt(recorded);$('recordo').textContent=fmt(o)+', strand '+b.origin_strand;
+ $('recordgamma').textContent=b.affected_strands.join(', ');$('recordhash').textContent=row.digest.slice(0,21)+'…';$('recordhash').title=row.digest;$('recordparent').textContent=b.parent_hash?b.parent_hash.slice(0,21)+'…':'genesis';$('recordparent').title=b.parent_hash||'genesis';
+ $('interpret').textContent=cf?'Purple is the counterfactual divergence boundary of the selected event; gold remains its immutable historical boundary. The underlying record and hash are unchanged.':'Gold marks the historical divergence boundary recorded when this event was created. Controls set parameters for the NEXT event only.';
+ }else{for(const id of ['recordlambda','recordb','recordo','recordgamma','recordhash','recordparent'])$(id).textContent='—';$('interpret').textContent='No selected historical event. Create or import a simulated omission to inspect its immutable provenance.';}
+ const panel=$('minima');if(!visible){panel.innerHTML='<strong>No active energy field</strong><p>Create an event to calculate stationary local basins.</p>';}else{
+ const text=ms.map((m,i)=>`<div>${i===0?'L':'R'}: q=${fmt(m.q)} · E=${fmt(m.e)}</div>`).join('');
+ panel.replaceChildren();const strong=document.createElement('strong');strong.textContent=(chosen?'Selected q='+fmt(chosen.q):'No finite minima')+' · '+ms.length+' local basin'+(ms.length===1?'':'s');panel.append(strong);
+ const pp=document.createElement('p');pp.textContent='Finite-neighborhood minima of E(q) = a(q²−0.64)² + 4(q−s)² + 0.008D; a=12+min(9,D/200), D='+fmt(profile.residual)+', s='+fmt(profile.target);panel.append(pp);
+ const line=document.createElement('p');line.textContent=ms.map((m,i)=>(i===0?'L':'R')+' q='+fmt(m.q)+' / E='+fmt(m.e)).join(' · ');panel.append(line);
+ }
+ }
+function pick(seq){visible=seq;seqSelected=seq;render();}
+async function append(){if(busy)return;busy=true;try{assert(records.length<MAX_EVENTS,'Journal is full');assert(!!crypto?.subtle,'SHA-256 requires HTTPS or localhost');const seq=records.length+1;const parent=records.at(-1)?.digest??null;
+ const b=nextBody(seq,currentConfig(),parent,seq*1000);validateBody(b,seq,parent);const row={body:b,digest:await digest(b)};records=[...records,row];pick(seq);status('ADMITTED '+row.digest.slice(0,21)+'… · event '+seq+' · immutable historical boundary');}
+ catch(e){status('ERROR: '+e.message);}finally{busy=false;render();}}
+function exportJournal(){const data=records.map(row=>canon(row)).join('\n')+(records.length?'\n':'');const url=URL.createObjectURL(new Blob([data],{type:'application/x-ndjson'}));const a=document.createElement('a');a.href=url;a.download='forge-v2_1-evidence.jsonl';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);status('Exported '+records.length+' event(s) as canonical subset JSONL');}
+async function importJournal(file){if(busy)return;busy=true;render();try{assert(file.size<3*1024*1024,'Import exceeds 3 MB');const text=await file.text();const lines=text.split(/\r?\n/).filter(s=>s.trim());assert(lines.length<=MAX_EVENTS,'Too many events');const candidate=lines.map((line,i)=>{try{return JSON.parse(line);}catch{throw Error('Invalid JSON line '+(i+1));}});
+ await verifyRecords(candidate);records=candidate.map(row=>({body:Object.freeze(row.body),digest:row.digest}));$('view').value='historical';pick(records.length);status('IMPORTED & VERIFIED '+records.length+' canonical event(s) · cold replay succeeded');}
+ catch(e){status('IMPORT REJECTED: '+e.message);}finally{busy=false;$('file').value='';render();}}
+async function verify(){if(busy)return;busy=true;render();try{await verifyRecords(records);status('VERIFIED '+records.length+' records · canonical integer schema · SHA-256 parent chain');}catch(e){status('VERIFY FAILED: '+e.message);}finally{busy=false;render();}}
+$('step').onclick=append;$('export').onclick=exportJournal;$('import').onclick=()=>$('file').click();$('file').onchange=()=>{if($('file').files[0])importJournal($('file').files[0]);};$('verify').onclick=verify;
+$('prev').onclick=()=>{if(seqSelected>1)pick(seqSelected-1);};$('next').onclick=()=>{if(seqSelected<records.length)pick(seqSelected+1);};
+$('reset').onclick=()=>{if(records.length&&!confirm('Clear the local journal? Export JSONL first if you want to retain it.'))return;records=[];visible=0;seqSelected=0;$('view').value='historical';render();status('Local journal cleared; no browser persistence or network write');};
+for(const id of ['lat','regen','view','basin'])$(id).oninput=render;
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.key==='ArrowLeft'&&seqSelected>1)pick(seqSelected-1);if(e.key==='ArrowRight'&&seqSelected<records.length)pick(seqSelected+1);});
+status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();
+})();
+</script>
+</body></html>

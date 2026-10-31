@@ -1,3 +1,6 @@
 forge-kernel
 *.o
+forge-grant
 __pycache__/
+*.pyc
+chapter7_preview.png

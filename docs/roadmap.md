@@ -106,6 +106,11 @@ Create an omission/diagonal event
 
 This one slice is more valuable than implementing many disconnected modules. Once it works locally, scale, transport, campaigns, and generality become extensions rather than rewrites.
 
+
 ## Chapter 6 initial implementation — 31 October 2026
 
-The native kernel now supports `occlude`, a strict event-verified, coarse-band projection with bounded inverse-image enumeration (six source nodes maximum). The browser independently checks the inverse and offers a third full-screen view. The reference fixture gives 45 compatible assignments. This is an **initial mathematical implementation**, not a production confidentiality claim: the source fixture and full field remain published. Future work requires private-source isolation, grants, projection attestations, and inference-resistance checks.
+The native kernel now supports `occlude`, a strict event-verified, coarse band projection with a bounded inverse-image enumeration (six source nodes maximum). The browser provides an independent inverse check and a third full-screen view with selectable candidates. The fixture gives 45 compatible position assignments. This is an **initial mathematical implementation**, not a production confidentiality claim: the same deterministic fixture and full field remain published. Future work must isolate private source repositories, add proper authorization/grants, attest public projections, and evaluate inference resistance under an explicit threat model.
+
+## Chapter 7 status
+
+An initial single-machine, pinned Ed25519 grant and nonce-bound `relation.assert` executor is implemented, with an offline committed receipt, independent C verification, PHP cold audit, and a public static four-mode inspector. Delegated grants, arbitrary effects, network quorum, and independent witness finality remain future work.

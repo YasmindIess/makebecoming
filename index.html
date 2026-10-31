@@ -17,7 +17,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 @media(max-width:960px){.space{grid-template-columns:minmax(0,1fr) 245px}aside{padding:10px}.brand{min-width:180px}header{padding:8px 12px}}
 @media(max-width:690px){.app{grid-template-rows:auto minmax(0,1fr) auto}.space{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,33%)}aside{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:auto;padding:8px 12px}aside h2,.hint,.divider{display:none}.kv{font-size:10px;grid-template-columns:70px minmax(0,1fr);gap:4px}.basin{padding:5px}.basin p{font-size:10px}header{gap:6px 10px}.brand{width:100%;margin:0}.brand strong{font-size:14px}.brand small{display:none}.ctl{font-size:10px}.ctl input[type=range]{width:74px}.actions{gap:3px}.actions button{padding:5px 7px;font-size:11px}footer{padding:4px 10px;min-height:29px}footer .note{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-.viz{isolation:isolate}svg[hidden],aside[hidden],.fieldbar[hidden],.occlusionbar[hidden]{display:none!important}
+.viz{isolation:isolate}svg[hidden],aside[hidden],.fieldbar[hidden],.occlusionbar[hidden],.grantbar[hidden]{display:none!important}
 .fieldbar{position:absolute;z-index:5;top:12px;right:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 12px;border:1px solid #49435d;border-radius:10px;background:rgba(11,12,27,.95);backdrop-filter:blur(9px);font-size:11px}
 .fieldbar label{display:flex;gap:5px;align-items:center;color:#d7ddf5}.fieldbar input{width:45px;padding:5px;border:1px solid #5b5a70;background:#191e30;border-radius:5px;color:white}.fieldbar select{max-width:160px}.fieldbar .confirmed{color:#90e6d7}
 .field-record{border:1px solid #494761;padding:11px;border-radius:9px;background:#181b31}.field-record b{color:var(--gold)}.field-record .mono{font:10px ui-monospace,monospace;overflow-wrap:anywhere;color:var(--cyan)}
@@ -30,14 +30,22 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 .occlusionbar input[type=range]{width:135px;accent-color:#b59ae9}.occlusionbar .confirmed{color:#96ded4}
 .occlusion-stack{border:1px solid #514e69;border-radius:9px;background:#171a2d;padding:10px}.occlusion-stack strong{color:#eac481}.occlusion-stack p{margin:7px 0 0;font-size:11px;line-height:1.55;color:#aebbd3}
 @media(max-width:690px){.occlusionbar{top:5px;left:5px;right:5px;padding:6px;font-size:10px}.occlusionbar input[type=range]{width:75px}.occlusionbar select{max-width:95px}}
+
+/* Chapter 7 — signed capability inspection, no browser-side execution authority */
+.grantbar{position:absolute;z-index:5;top:12px;right:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 12px;border:1px solid #756044;border-radius:10px;background:rgba(11,12,27,.96);font-size:11px}
+.grantbar label{display:flex;gap:7px;align-items:center;color:#dfd9e8}
+.grantbar span{color:#90e1d4}
+.grantbox{border:1px solid #474564;border-radius:9px;background:#191b30;padding:10px;overflow-wrap:anywhere}
+.grantbox strong{color:#e7bf82}.grantbox p{margin:5px 0;color:#a9b8cf;font-size:11px}
+@media(max-width:690px){.grantbar{top:5px;left:5px;right:5px;padding:5px;font-size:10px}.grantbar select{max-width:150px;font-size:10px}}
 </style>
 </head>
 <body>
 <div class="app">
 <header>
- <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.3 · NATIVE OCCLUSION / REGENERATION / RELATIONAL EVIDENCE</small></div>
+ <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.4 · NATIVE GRANTS / BECOME / RELATIONAL EVIDENCE</small></div>
  <div class="controls">
-  <label class="ctl">MODE <select id="screen"><option value="omission">OMISSION</option><option value="field">FIELD / MICRO→MACRO</option><option value="occlusion">OCCLUSION / REGEN</option></select></label>
+  <label class="ctl">MODE <select id="screen"><option value="omission">OMISSION</option><option value="field">FIELD / MICRO→MACRO</option><option value="occlusion">OCCLUSION / REGEN</option><option value="grants">GRANTS / BECOME</option></select></label>
   <label class="ctl">λ <input id="lat" type="range" min="0" max="100" value="43"><output id="latv">43</output></label>
   <label class="ctl">REGEN <input id="regen" type="range" min="0" max="100" value="62"><output id="regv">62</output></label>
   <label class="ctl">VIEW <select id="view"><option value="historical">Historical</option><option value="counterfactual">Counterfactual</option></select></label>
@@ -57,6 +65,12 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   <label>ORIGIN <select id="occlusionSource"><option value="native">Native C projection</option><option value="session">Current session</option></select></label>
   <label>CANDIDATE <input id="occlusionCandidate" type="range" min="1" max="1" value="1"><output id="occlusionCandidateVal">1 / 1</output></label>
   <span class="confirmed" id="occlusionStatus">Loading public-only data…</span>
+ </div>
+
+ <div class="grantbar" id="grantToolbar" hidden>
+  <label>VERIFY <select id="grantScenario"><option value="accepted">Signed + admitted</option><option value="spent">Replay consumed nonce</option><option value="tamper">Tampered request</option><option value="wrongroot">Untrusted issuer</option><option value="wrongscope">Unauthorized action</option></select></label>
+  <button id="grantCheck">Verify signatures + policy</button>
+  <span id="grantStatus">Loading native receipt…</span>
  </div>
  <svg id="scene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Omission origin, historical latency, first divergence, descendant trajectories and two calculated local minima">
  <defs><radialGradient id="bg"><stop stop-color="#1d1739"/><stop offset=".58" stop-color="#0d1020"/><stop offset="1" stop-color="#060811"/></radialGradient><linearGradient id="ribbon"><stop stop-color="#9b84db"/><stop offset=".52" stop-color="#ddac6a"/><stop offset="1" stop-color="#6bd6d0"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#8e8ca8" stroke-opacity=".12"/></pattern></defs>
@@ -78,6 +92,11 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   </defs>
   <rect width="1400" height="790" fill="url(#occBg)"/>
   <g id="occlusionArt"></g>
+ </svg>
+
+ <svg id="grantScene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chapter 7 signed capability and nonce-bound effect graph" hidden>
+  <defs><radialGradient id="grantBg"><stop stop-color="#261b34"/><stop offset="1" stop-color="#090c18"/></radialGradient><filter id="grantGlow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect width="1400" height="790" fill="url(#grantBg)"/><g id="grantArt"></g>
  </svg>
  </section>
  <aside id="omissionInspector" aria-label="Evidence and computed minima inspector">
@@ -111,6 +130,17 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   <h3>SECURITY / KNOWLEDGE BOUNDARY</h3>
   <p class="hint" style="display:block">This is a mathematical occlusion demo, not a privacy guarantee. The original example fixture and its deterministic position rule are published elsewhere on this site. The public-only JSON is unsigned; its producer verification cannot be independently established from this projection alone.</p>
   <p class="hint" style="display:block">No external quantum or qualia claims, anonymous proxying, or private-node isolation are implied.</p>
+ </aside>
+ <aside id="grantInspector" aria-label="Grant verifier and effect receipt inspector" hidden>
+  <h2>INSPECT / BECOME</h2>
+  <div class="pill" id="grantProvenance">Signed example loading…</div>
+  <div class="grantbox"><strong id="grantDecision">Awaiting validation</strong><p id="grantReason">Root pin, both signatures, scope, target and nonce will be checked.</p></div>
+  <h3>GRANT / IDENTITY</h3>
+  <div class="kv"><span>Issuer</span><span id="grantIssuer">—</span><span>Subject</span><span id="grantSubject">—</span><span>Scope</span><span id="grantScope">—</span><span>Nonce</span><span id="grantNonce" class="hash">—</span><span>Grant CID</span><span id="grantCid" class="hash">—</span></div>
+  <h3>ONE CONSUMABLE EFFECT</h3>
+  <div class="grantbox"><strong id="grantEffect">—</strong><p id="grantEffectDetail">Local PHP journal receipt will be checked against native C verification.</p></div>
+  <div class="divider"></div>
+  <p class="hint" style="display:block">Real Ed25519 fixture signatures are checked with Web Crypto. The C/PHP verifier and one-use commit ran offline; Vercel hosts a static public result, not an execution service. No private keys or new authorizations are generated here.</p>
  </aside>
 </div>
 <footer><span class="log" id="status" role="status">Initializing local evidence engine…</span><span class="note">SVG is a projection of the journal · local browser execution only</span></footer>
@@ -170,7 +200,7 @@ const paths=Array.from({length:STRANDS},(_,i)=>svg('path',{fill:'none',stroke:co
 function render(){const cfg=currentConfig();$('latv').textContent=String(cfg.lambda_milli/10);$('regv').textContent=String(cfg.regen_milli/10);
  $('knowledge').textContent=visible+' / '+records.length;$('selection').textContent=visible?('Event '+seqSelected):'No events';
  $('prev').disabled=seqSelected<=1;$('next').disabled=seqSelected>=records.length;
- $('step').disabled=busy||records.length>=MAX_EVENTS;$('import').disabled=busy;$('verify').disabled=busy;
+ $('step').disabled=busy||records.length>=MAX_EVENTS||$('screen').value!=='omission';$('import').disabled=busy;$('verify').disabled=busy;
  const profile=dataProfile(),ms=visible>0?minima(profile):[],chosen=selectedBasin(ms),q=chosen?.q??0;lastMinima=ms;
  paths.forEach((p,i)=>{let d='';for(let x=95;x<=1325;x+=9){d+=(x===95?'M':'L')+x+' '+positionY(i,x,q);}p.setAttribute('d',d);});
  nodeGroup.replaceChildren();for(let i=0;i<STRANDS;i++)for(let k=0;k<8;k++){const x=165+k*157+(i%3)*11,y=positionY(i,x,q);svg('circle',{cx:x,cy:y,r:k===4?3.4:1.6,fill:colors[i%3],opacity:.83},nodeGroup);}
@@ -384,7 +414,97 @@ function renderOcclusion(){
  addText(60,746,'SOURCE / '+(isNative?'NATIVE C · UNSIGNED PROJECTION':'BROWSER SESSION · JS DERIVED'),11,'#acb9d2');
  addText(790,746,'NO UNIQUELY RECOVERED PRIVATE STATE',11,'#e4b67d');
 }
-function switchScreen(){const mode=$('screen').value,field=mode==='field',occ=mode==='occlusion';$('scene').toggleAttribute('hidden',field||occ);$('fieldScene').toggleAttribute('hidden',!field);$('occlusionScene').toggleAttribute('hidden',!occ);$('fieldToolbar').hidden=!field;$('occlusionToolbar').hidden=!occ;$('omissionInspector').hidden=field||occ;$('fieldInspector').hidden=!field;$('occlusionInspector').hidden=!occ;if(field)renderField();else if(occ)renderOcclusion();else render();}
+
+/* Chapter 7: externally signed demonstration, with a browser-side independent
+ * WebCrypto Ed25519 check. The browser cannot authorize or commit new effects.
+ */
+let nativeGrant=null,grantCheckState={ok:false,reason:'Loading signed fixture…'};
+function wire(data,kind,fields){
+ const rows=data.split('\n');assert(rows.length===fields.length+3&&rows.at(-1)==='',kind+' record malformed');
+ assert(rows[0]===kind,'Wrong wire domain');const result={};
+ for(let i=0;i<fields.length;i++){const prefix=fields[i]+'=';assert(rows[i+1].startsWith(prefix),'Wrong '+kind+' field '+fields[i]);result[fields[i]]=rows[i+1].slice(prefix.length);}
+ assert(/^signature=[0-9a-f]{128}$/.test(rows[fields.length+1]),'Bad Ed25519 signature');
+ const unsigned=rows.slice(0,fields.length+1).join('\n')+'\n';
+ return {fields:result,signature:rows[fields.length+1].slice(10),unsigned};
+}
+function bytesFromHex(s){assert(/^(?:[0-9a-f]{2})+$/.test(s),'Invalid hex encoding');return Uint8Array.from(s.match(/../g),p=>parseInt(p,16));}
+async function verifyEd(pub,sig,body){const key=await crypto.subtle.importKey('raw',bytesFromHex(pub),'Ed25519',false,['verify']);return crypto.subtle.verify('Ed25519',key,bytesFromHex(sig),new TextEncoder().encode(body));}
+async function sha256Text(s){return 'sha256:'+hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)));}
+const GRANT_FIELDS=['issuer','subject','scope','target','nonce','not_before','expires_at','limit'];
+const EFFECT_FIELDS=['grant','subject','scope','target','nonce','from','to'];
+async function validateGrants(d,scenario){
+ assert(d?.schema==='forge.grant.public-demo.v1'&&d.not_authority_for_public_site===true,'Invalid public fixture');
+ const g=wire(d.grant_text,'FORGE-GRANT/1',GRANT_FIELDS),e=wire(d.request_text,'FORGE-EFFECT/1',EFFECT_FIELDS);
+ const cid=await sha256Text(g.unsigned),rid=await sha256Text(e.unsigned);
+ assert(cid===e.fields.grant&&cid===d.native_verification.grant,'Grant CID mismatch');
+ assert(rid===d.native_verification.request,'Request CID mismatch');
+ assert(d.pinned_root===g.fields.issuer.slice(8),'Root key not pinned');
+ assert(g.fields.issuer.startsWith('ed25519:')&&g.fields.subject.startsWith('ed25519:'),'Malformed identity');
+ assert(g.fields.subject===e.fields.subject&&g.fields.nonce===e.fields.nonce&&g.fields.target===e.fields.target&&g.fields.scope===e.fields.scope,'Request scope mismatch');
+ assert(await verifyEd(g.fields.issuer.slice(8),g.signature,g.unsigned),'Issuer signature invalid');
+ assert(await verifyEd(g.fields.subject.slice(8),e.signature,e.unsigned),'Subject signature invalid');
+ assert(g.fields.scope==='relation.assert'&&g.fields.limit==='1','Disallowed scope');
+ assert(Number(g.fields.not_before)<=Date.now()/1000&&Number(g.fields.expires_at)>Date.now()/1000,'Grant expired');
+ assert(d.native_verification.verified===true&&d.native_verification.target===g.fields.target,'Native result differs');
+ assert(d.committed_receipt.status==='admitted'&&d.committed_receipt.committed===true&&d.committed_receipt.grant===cid&&d.committed_receipt.nonce===g.fields.nonce,'Committed receipt mismatch');
+ assert(d.native_audit.verified===true&&d.native_audit.effects===1&&d.native_audit.unique_nonces===1,'Native audit mismatch');
+ assert(d.source_event_ids[0]===e.fields.from&&d.source_event_ids.at(-1)===e.fields.to&&d.source_event_ids.at(-1)===g.fields.target,'Wrong input lineage');
+ if(nativeField&&nativeChecked)assert(nativeField.source_head===g.fields.target,'Native field target mismatch');
+ if(scenario==='spent')return {ok:false,reason:'nonce_already_consumed · local committed receipt exists'};
+ if(scenario==='tamper'){
+  const altered=e.unsigned.replace('scope=relation.assert','scope=relation.erase');
+  assert(!(await verifyEd(g.fields.subject.slice(8),e.signature,altered)),'Unexpected altered signature acceptance');
+  return {ok:false,reason:'Ed25519 verification rejects altered signed request'};
+ }
+ if(scenario==='wrongroot')return {ok:false,reason:'issuer_not_pinned · a self-signed grant is insufficient'};
+ if(scenario==='wrongscope')return {ok:false,reason:'scope_disallowed · grant allows only relation.assert'};
+ return {ok:true,reason:'Signed + pinned + scoped + admitted once by local journal; no new browser effect'};
+}
+async function loadGrants(){
+ try{const response=await fetch('./grants/public-demo.json',{cache:'no-store'});assert(response.ok,'Signed grant fixture unavailable');
+  const d=await response.json();const check=await validateGrants(d,'accepted');assert(check.ok,'Native fixture validation rejected');
+  nativeGrant=d;grantCheckState=check;$('grantStatus').textContent='Ed25519 verified';
+ }catch(e){grantCheckState={ok:false,reason:e.message};$('grantStatus').textContent='Grant fixture unavailable';}
+ renderGrants();
+}
+async function refreshGrants(){
+ if(!nativeGrant){renderGrants();return;}
+ try{grantCheckState=await validateGrants(nativeGrant,$('grantScenario').value);$('grantStatus').textContent=grantCheckState.ok?'Signed + admitted':'Rejected / no effect';}
+ catch(e){grantCheckState={ok:false,reason:e.message};$('grantStatus').textContent='Verification rejected';}
+ renderGrants();
+}
+function renderGrants(){
+ if($('screen').value!=='grants')return;
+ const art=$('grantArt');art.replaceChildren();const d=nativeGrant,good=grantCheckState.ok;
+ fieldLabel(art,48,58,'GLOBAL GRANTS / MAKE BECOMING','#e9c488',25);
+ fieldLabel(art,48,89,'AUTHENTICATED RECOGNITION IS NOT EXECUTION AUTHORITY','#aeb7d0',13);
+ if(!d){fieldLabel(art,72,245,grantCheckState.reason,'#dbac9e',18);return;}
+ const g=wire(d.grant_text,'FORGE-GRANT/1',GRANT_FIELDS),e=wire(d.request_text,'FORGE-EFFECT/1',EFFECT_FIELDS);
+ const stages=[{x:84,t:'PINNED ROOT',sub:'Ed25519 issuer',c:'#e7bb7b'},{x:365,t:'SUBJECT',sub:'Signed request',c:'#ac99e6'},{x:646,t:'SCOPE + NONCE',sub:'Single-use grant',c:'#76d9d2'},{x:927,t:'EFFECT',sub:'Relation assertion',c:'#d1ae7c'}];
+ for(let i=0;i<stages.length;i++){
+  const a=stages[i];svg('rect',{x:a.x,y:212,width:236,height:145,rx:19,fill:'#1b1a31',stroke:a.c,'stroke-width':2},art);
+  svg('circle',{cx:a.x+118,cy:240,r:7,fill:a.c,filter:'url(#grantGlow)'},art);
+  fieldLabel(art,a.x+18,283,a.t,'#f0dfc9',17);fieldLabel(art,a.x+18,311,a.sub,'#a8b6d0',12);
+  if(i<stages.length-1){svg('path',{d:`M${a.x+236} 286 L${stages[i+1].x-9} 286`,stroke:'#cba6e7','stroke-width':2},art);}
+ }
+ const verdict=good?'ADMITTED / COMMITTED':'REJECTED / NO NEW EFFECT';
+ svg('rect',{x:200,y:420,width:965,height:120,rx:23,fill:good?'#173a36':'#3a2735',stroke:good?'#77d9c8':'#f0a7a0','stroke-width':2},art);
+ fieldLabel(art,243,465,verdict,good?'#94f1d6':'#f4ada5',24);
+ fieldLabel(art,243,501,grantCheckState.reason,'#d7d9e8',14);
+ svg('line',{x1:110,y1:599,x2:1260,y2:599,stroke:'#a68bbf','stroke-opacity':.37},art);
+ fieldLabel(art,100,630,'ISSUER PUBLIC KEY  '+g.fields.issuer.slice(8,30)+'…','#d2b48f',12);
+ fieldLabel(art,100,659,'NONCE  '+g.fields.nonce.slice(0,28)+'…','#a6d9d1',12);
+ fieldLabel(art,100,688,'SOURCE HEAD  '+g.fields.target.slice(0,28)+'…','#aebfe4',12);
+ fieldLabel(art,100,735,'DEMO FIXTURE · NO WEB SIGNER · NO REMOTE EFFECT EXECUTION','#aaafc9',12);
+ $('grantProvenance').textContent=good?'WebCrypto + native C/PHP fixture':'Scenario evaluation / no effect';
+ $('grantIssuer').textContent=g.fields.issuer.slice(0,22)+'…';$('grantSubject').textContent=g.fields.subject.slice(0,22)+'…';$('grantScope').textContent=g.fields.scope;$('grantNonce').textContent=g.fields.nonce.slice(0,26)+'…';$('grantCid').textContent=d.native_verification.grant.slice(0,24)+'…';
+ $('grantDecision').textContent=verdict;$('grantReason').textContent=grantCheckState.reason;
+ $('grantEffect').textContent=good?'RECEIPTED · 1 / 1':'NO ADDITIONAL EFFECT';
+ $('grantEffectDetail').textContent=good?d.committed_receipt.effect+' · 1 unique nonce in native audit':'The existing historical receipt remains recorded; this scenario is denied without changing it.';
+}
+$('grantScenario').onchange=refreshGrants;$('grantCheck').onclick=refreshGrants;
+
+function switchScreen(){const mode=$('screen').value,field=mode==='field',occ=mode==='occlusion',grant=mode==='grants';$('scene').toggleAttribute('hidden',field||occ||grant);$('fieldScene').toggleAttribute('hidden',!field);$('occlusionScene').toggleAttribute('hidden',!occ);$('grantScene').toggleAttribute('hidden',!grant);$('fieldToolbar').hidden=!field;$('occlusionToolbar').hidden=!occ;$('grantToolbar').hidden=!grant;$('omissionInspector').hidden=field||occ||grant;$('fieldInspector').hidden=!field;$('occlusionInspector').hidden=!occ;$('grantInspector').hidden=!grant;$('step').disabled=mode!=='omission'||busy||records.length>=MAX_EVENTS;$('step').title=mode==='omission'?'Create one browser-local simulated omission':'Switch to OMISSION to create a simulated event; this does not invoke the grant executor';if(field)renderField();else if(occ)renderOcclusion();else if(grant)renderGrants();else render();}
 $('screen').onchange=switchScreen;
 $('occlusionSource').onchange=()=>{$('occlusionCandidate').value='1';renderOcclusion();};
 $('occlusionCandidate').oninput=renderOcclusion;
@@ -404,7 +524,7 @@ $('prev').onclick=()=>{if(seqSelected>1)pick(seqSelected-1);};$('next').onclick=
 $('reset').onclick=()=>{if(records.length&&!confirm('Clear the local journal? Export JSONL first if you want to retain it.'))return;records=[];visible=0;seqSelected=0;$('view').value='historical';render();renderField();renderOcclusion();status('Local journal cleared; no browser persistence or network write');};
 for(const id of ['lat','regen','view','basin'])$(id).oninput=render;
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.key==='ArrowLeft'&&seqSelected>1)pick(seqSelected-1);if(e.key==='ArrowRight'&&seqSelected<records.length)pick(seqSelected+1);});
-status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();loadNativeField();loadOcclusion();
+status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();loadNativeField();loadOcclusion();loadGrants();
 })();
 </script>
 </body></html>

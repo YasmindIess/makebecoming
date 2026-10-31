@@ -231,7 +231,77 @@ static void topology_write(FILE *out,Complex *k,Omission *records,int record_cou
     }
     free(vertex_cids);
 }
-static void replay(FILE *in,const char *outname){
+/* Chapter 5: deterministic, observational multiscale field projection.
+ * The positional contact graph is DISTINCT from the R0 simplicial complex:
+ * an eligible pair does not, by itself, make an oriented 1-simplex in R0.
+ * Only the strict, independently verified V2.1 record format is accepted.
+ */
+typedef struct {int tau,delta,count,overlap_sum;} Motif;
+static int strand_overlap(const Omission *a,const Omission *b){
+    int total=0;
+    for(int i=0;i<a->affected_n;i++)for(int j=0;j<b->affected_n;j++)
+        if(a->affected[i]==b->affected[j])total++;
+    return total;
+}
+static int field_compatible(int tau,int delta,int overlap){
+    return tau<=3&&delta>=-6&&delta<=6&&overlap>0;
+}
+static int froot(int *parent,int i){while(parent[i]!=i){parent[i]=parent[parent[i]];i=parent[i];}return i;}
+static void funite(int *parent,int a,int b){a=froot(parent,a);b=froot(parent,b);if(a!=b)parent[a]=b;}
+static void field_write(FILE *out,const Omission *rows,int n,const int64_t *cnt,int boundary_ok){
+    int *parents=calloc((size_t)n+1,sizeof(int));
+    Motif *motifs=calloc((size_t)n*(size_t)(n-1)/2+1,sizeof(Motif));
+    require(parents&&motifs,"field graph allocation failed");
+    for(int i=0;i<n;i++)parents[i]=i;
+    int motif_count=0,contacts=0,compatible=0;
+    for(int i=0;i<n;i++)for(int j=0;j<i;j++){
+        int tau=i-j;
+        int delta=(int)(rows[j].origin_strand-rows[i].origin_strand);
+        int overlap=strand_overlap(&rows[i],&rows[j]);
+        int fit=field_compatible(tau,delta,overlap);
+        if(fit){funite(parents,i,j);compatible++;}
+        contacts++;
+        int k=0;for(;k<motif_count;k++)if(motifs[k].tau==tau&&motifs[k].delta==delta)break;
+        if(k==motif_count){motifs[k].tau=tau;motifs[k].delta=delta;motif_count++;}
+        motifs[k].count++;motifs[k].overlap_sum+=overlap;
+    }
+    int regions=0;
+    for(int i=0;i<n;i++)if(froot(parents,i)==i)regions++;
+    fprintf(out,"{\"schema\":\"forge.field.v1\",\"source_kind\":\"native-c-verified-fixture\",\"source_head\":");
+    if(n)fprintf(out,"\"%s\"",rows[n-1].digest);else fputs("null",out);
+    fprintf(out,",\"rules\":{\"generation\":\"seq_minus_one\",\"position\":\"origin_strand\",\"eligible\":\"all_earlier_pairs\",\"compatible\":\"tau<=3 AND abs(delta)<=6 AND affected_overlap>0\",\"invariant\":\"delta*g+tau*p\"},");
+    fprintf(out,"\"micro\":{\"nodes\":[");
+    for(int i=0;i<n;i++){
+        const Omission *o=&rows[i];
+        int root_i=froot(parents,i),region=root_i+1;
+        for(int j=0;j<n;j++)if(froot(parents,j)==root_i&&j+1<region)region=j+1;
+        fprintf(out,"%s{\"seq\":%lld,\"generation\":%d,\"position\":%lld,\"event_cid\":\"%s\",\"boundary_x_milli\":%lld,\"lambda_milli\":%lld,\"affected_count\":%d,\"region\":%d}",
+           i?",":"",(long long)o->seq,i,(long long)o->origin_strand,o->digest,
+           (long long)o->boundary_x_milli,(long long)o->lambda_milli,o->affected_n,region);
+    }
+    fprintf(out,"]},\"meso\":{\"contacts\":[");
+    int edge_index=0;
+    for(int i=0;i<n;i++)for(int j=0;j<i;j++){
+        int tau=i-j,delta=(int)(rows[j].origin_strand-rows[i].origin_strand);
+        int overlap=strand_overlap(&rows[i],&rows[j]);
+        int invariant=delta*i+tau*(int)rows[i].origin_strand;
+        fprintf(out,"%s{\"from\":%d,\"to\":%d,\"tau\":%d,\"delta\":%d,\"invariant\":%d,\"overlap\":%d,\"compatible\":%s}",
+            edge_index++?",":"",i+1,j+1,tau,delta,invariant,overlap,
+            field_compatible(tau,delta,overlap)?"true":"false");
+    }
+    fprintf(out,"],\"motifs\":[");
+    for(int k=0;k<motif_count;k++){
+        Motif *m=&motifs[k];
+        fprintf(out,"%s{\"tau\":%d,\"delta\":%d,\"count\":%d,\"overlap_sum\":%d}",
+           k?",":"",m->tau,m->delta,m->count,m->overlap_sum);
+    }
+    fprintf(out,"]},\"macro\":{\"regions\":%d,\"compatible_contacts\":%d,\"candidate_contacts\":%d},",regions,compatible,contacts);
+    fprintf(out,"\"simplicial\":{\"vertices\":%lld,\"edges\":%lld,\"faces\":%lld,\"tetrahedra\":%lld,\"boundary_squared_zero\":%s}}\n",
+           (long long)cnt[0],(long long)cnt[1],(long long)cnt[2],(long long)cnt[3],boundary_ok?"true":"false");
+    free(parents);free(motifs);
+}
+
+static void replay(FILE *in,const char *outname,int field_only){
     Omission *rows=calloc(MAX_EVENTS,sizeof(Omission));require(rows!=NULL,"record allocation failed");Complex k;complex_init(&k);
     char *line=NULL;size_t cap=0;ssize_t len;int n=0;uint32_t previous_receipt=UINT32_MAX;
     while((len=getline(&line,&cap,in))!=-1){
@@ -256,6 +326,7 @@ static void replay(FILE *in,const char *outname){
     memset(counts,0,sizeof(counts));for(uint32_t i=0;i<k.n;i++)counts[k.items[i].dim]++;
     int comp=components(&k);int64_t chi=counts[0]-counts[1]+counts[2]-counts[3];
     if(outname){FILE *out=fopen(outname,"wb");require(out!=NULL,"failed to create topology output");topology_write(out,&k,rows,n);require(!ferror(out)&&fclose(out)==0,"failed writing topology output");}
+    if(field_only){field_write(stdout,rows,n,counts,1);complex_free(&k);free(rows);return;}
     printf("{\"schema\":\"forge.kernel.r0\",\"events\":%d,\"verified\":true,\"boundary_squared_zero\":true,\"vertices\":%lld,\"edges\":%lld,\"faces\":%lld,\"tetrahedra\":%lld,\"connected_components\":%d,\"euler_characteristic\":%lld,\"head\":",n,(long long)counts[0],(long long)counts[1],(long long)counts[2],(long long)counts[3],comp,(long long)chi);
     if(n)printf("\"%s\"",rows[n-1].digest);else printf("null");puts("}");
     complex_free(&k);free(rows);
@@ -269,10 +340,14 @@ static void simplex_cli(const char *arg){
 }
 int main(int argc,char **argv){
     if(argc==3&&!strcmp(argv[1],"simplex")){simplex_cli(argv[2]);return 0;}
+    if(argc==3&&!strcmp(argv[1],"field")){
+       FILE *in=!strcmp(argv[2],"-")?stdin:fopen(argv[2],"rb");require(in!=NULL,"cannot open JSONL input");
+       replay(in,NULL,1);if(in!=stdin)fclose(in);return 0;
+    }
     if(argc>=3&&argc<=5&&!strcmp(argv[1],"replay")){
        const char *path=argv[2],*out=NULL;
        if(argc==5){require(!strcmp(argv[3],"--topology"),"expected --topology <path>");out=argv[4];require(strcmp(path,out)!=0,"input and topology output must be different files");}
-       FILE *in=!strcmp(path,"-")?stdin:fopen(path,"rb");require(in!=NULL,"cannot open JSONL input");replay(in,out);if(in!=stdin)fclose(in);return 0;
+       FILE *in=!strcmp(path,"-")?stdin:fopen(path,"rb");require(in!=NULL,"cannot open JSONL input");replay(in,out,0);if(in!=stdin)fclose(in);return 0;
     }
-    fprintf(stderr,"Usage: %s simplex 4,1,2,3\n       %s replay events.jsonl [--topology derived.jsonl]\n",argv[0],argv[0]);return 2;
+    fprintf(stderr,"Usage: %s simplex 4,1,2,3\n       %s replay events.jsonl [--topology derived.jsonl]\n       %s field events.jsonl > field.json\n",argv[0],argv[0],argv[0]);return 2;
 }

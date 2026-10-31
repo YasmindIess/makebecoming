@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FORGE / Truthful Latency V2.1</title>
+<title>FORGE / Truthful Latency & Native Fields V2.2</title>
 <meta name="description" content="A replayable, content-addressed omission observatory: historical latency, counterfactuals, real basin detection and JSONL evidence.">
 <style>
 :root{color-scheme:dark;--bg:#080b13;--panel:#111523;--muted:#a0abc5;--ink:#edf1fa;--gold:#e8bb74;--violet:#b39af6;--cyan:#74ded6;--line:#30374e}
@@ -17,13 +17,20 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 @media(max-width:960px){.space{grid-template-columns:minmax(0,1fr) 245px}aside{padding:10px}.brand{min-width:180px}header{padding:8px 12px}}
 @media(max-width:690px){.app{grid-template-rows:auto minmax(0,1fr) auto}.space{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,33%)}aside{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:auto;padding:8px 12px}aside h2,.hint,.divider{display:none}.kv{font-size:10px;grid-template-columns:70px minmax(0,1fr);gap:4px}.basin{padding:5px}.basin p{font-size:10px}header{gap:6px 10px}.brand{width:100%;margin:0}.brand strong{font-size:14px}.brand small{display:none}.ctl{font-size:10px}.ctl input[type=range]{width:74px}.actions{gap:3px}.actions button{padding:5px 7px;font-size:11px}footer{padding:4px 10px;min-height:29px}footer .note{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.viz{isolation:isolate}svg[hidden],aside[hidden],.fieldbar[hidden]{display:none!important}
+.fieldbar{position:absolute;z-index:5;top:12px;right:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 12px;border:1px solid #49435d;border-radius:10px;background:rgba(11,12,27,.95);backdrop-filter:blur(9px);font-size:11px}
+.fieldbar label{display:flex;gap:5px;align-items:center;color:#d7ddf5}.fieldbar input{width:45px;padding:5px;border:1px solid #5b5a70;background:#191e30;border-radius:5px;color:white}.fieldbar select{max-width:160px}.fieldbar .confirmed{color:#90e6d7}
+.field-record{border:1px solid #494761;padding:11px;border-radius:9px;background:#181b31}.field-record b{color:var(--gold)}.field-record .mono{font:10px ui-monospace,monospace;overflow-wrap:anywhere;color:var(--cyan)}
+.field-stat{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field-stat div{background:#191d30;border:1px solid #373d51;padding:9px;border-radius:9px}.field-stat strong{display:block;font-size:19px;color:var(--gold);font-variant-numeric:tabular-nums}.field-stat small{color:#a9b3cb}
+@media(max-width:690px){.fieldbar{top:5px;right:5px;left:5px;padding:5px;gap:3px;font-size:9px}.fieldbar select{max-width:110px;font-size:10px}.fieldbar input{width:34px}.field-stat{display:none}.field-record{padding:4px;font-size:10px}}
 </style>
 </head>
 <body>
 <div class="app">
 <header>
- <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.1 · TRUTHFUL LATENCY / RECONSTRUCTIBLE EVIDENCE</small></div>
+ <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.2 · NATIVE C MULTISCALE FIELD / RECONSTRUCTIBLE EVIDENCE</small></div>
  <div class="controls">
+  <label class="ctl">MODE <select id="screen"><option value="omission">OMISSION</option><option value="field">FIELD / MICRO→MACRO</option></select></label>
   <label class="ctl">λ <input id="lat" type="range" min="0" max="100" value="43"><output id="latv">43</output></label>
   <label class="ctl">REGEN <input id="regen" type="range" min="0" max="100" value="62"><output id="regv">62</output></label>
   <label class="ctl">VIEW <select id="view"><option value="historical">Historical</option><option value="counterfactual">Counterfactual</option></select></label>
@@ -32,7 +39,13 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
  <div class="actions"><button class="major" id="step">MAKE BECOMING</button><button id="export">Export JSONL</button><button id="import">Import</button><input id="file" type="file" accept=".jsonl,.ndjson,application/x-ndjson,text/plain"><button id="verify">Verify</button><button id="reset">Clear</button></div>
 </header>
 <div class="space">
- <section class="viz" aria-label="Interactive omission geometry and confluent minima">
+ <section class="viz" aria-label="Interactive omission and native relational field projections">
+ <div class="fieldbar" id="fieldToolbar" hidden>
+  <label>SOURCE <select id="fieldSource"><option value="native">Native C fixture</option><option value="browser">This session</option></select></label>
+  <label>τ <input id="fieldTau" type="number" value="2" min="1" max="249" step="1"></label>
+  <label>δ <input id="fieldDelta" type="number" value="3" min="-16" max="16" step="1"></label>
+  <span class="confirmed" id="nativeStatus">Loading native field…</span>
+ </div>
  <svg id="scene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Omission origin, historical latency, first divergence, descendant trajectories and two calculated local minima">
  <defs><radialGradient id="bg"><stop stop-color="#1d1739"/><stop offset=".58" stop-color="#0d1020"/><stop offset="1" stop-color="#060811"/></radialGradient><linearGradient id="ribbon"><stop stop-color="#9b84db"/><stop offset=".52" stop-color="#ddac6a"/><stop offset="1" stop-color="#6bd6d0"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#8e8ca8" stroke-opacity=".12"/></pattern></defs>
  <rect width="1400" height="790" fill="url(#bg)"/><rect width="1400" height="790" fill="url(#grid)"/>
@@ -40,14 +53,30 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
  <g id="ribbons"></g><g id="nodes"></g><g id="events"></g>
  <g pointer-events="none"><text x="45" y="52" fill="#e5c78f" font-size="24" letter-spacing="3">ΔH = ⟨ o, λ, b, Γ ⟩</text><text x="47" y="81" fill="#a6a9c5" font-size="12" letter-spacing="2">ORIGIN · LATENCY · FIRST DIVERGENCE · DESCENDANT CONSEQUENCES</text><text x="45" y="748" fill="#b89de9" font-size="14" letter-spacing="2">ORIGIN</text><text x="540" y="748" fill="#eac485" font-size="14" letter-spacing="2">DIVERGENCE</text><text x="1090" y="748" fill="#87e5db" font-size="14" letter-spacing="2">RECONCILIATION</text><text x="45" y="773" fill="#8b98b5" font-size="11">FIXED EVENTS · REVISABLE PROJECTIONS</text></g><g id="mathlabels"></g>
  </svg>
+ <svg id="fieldScene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Native C computed micro positions, meso diagonal contacts and macro relational regions" hidden>
+  <defs><radialGradient id="fieldBg"><stop stop-color="#1b183c"/><stop offset="1" stop-color="#080b16"/></radialGradient><filter id="fieldGlow"><feGaussianBlur stdDeviation="3.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect width="1400" height="790" fill="url(#fieldBg)"/>
+  <g id="fieldArt"></g>
+ </svg>
  </section>
- <aside aria-label="Evidence and computed minima inspector">
+ <aside id="omissionInspector" aria-label="Evidence and computed minima inspector">
   <h2>INSPECT / EVIDENCE</h2><div class="inspect-nav"><button id="prev" aria-label="Previous historical event">◀</button><span id="selection" class="pill">No events</span><button id="next" aria-label="Next historical event">▶</button></div>
   <div class="kv"><span>Knowledge</span><span id="knowledge">0 / 0</span><span>Recorded λ</span><span id="recordlambda">—</span><span>Recorded b</span><span id="recordb">—</span><span>Original o</span><span id="recordo">—</span><span>Γ descendants</span><span id="recordgamma">—</span><span>SHA-256</span><span id="recordhash" class="hash">—</span><span>Parent</span><span id="recordparent" class="hash">—</span></div>
   <div class="divider"></div>
   <h3>CONFLUENT ENERGY</h3><div id="minima" class="basin"><strong>Awaiting first event</strong><p>Local minima will be calculated from the finite potential over the active event field.</p></div>
   <div class="divider"></div><h3>CLAIM BOUNDARY</h3><p id="interpret" class="hint">The event journal represents a simulated mathematical process. Records are immutable in this session; measurements of the external world are not asserted.</p>
   <p class="hint">SHA-256 hashes are domain-separated record digests, not IPFS CIDs, digital signatures, or proof of physical occurrence. No network access or hidden persistence.</p>
+ </aside>
+ <aside id="fieldInspector" aria-label="Multiscale field inspector" hidden>
+  <h2>INSPECT / MULTISCALE</h2>
+  <div class="pill" id="fieldProvenance">Waiting for native field…</div>
+  <div class="field-stat"><div><strong id="fieldNodeCount">—</strong><small>Micro positions</small></div><div><strong id="fieldContactCount">—</strong><small>Meso contacts</small></div><div><strong id="fieldRegionCount">—</strong><small>Macro regions</small></div><div><strong id="fieldSimplexCount">—</strong><small>Native tetrahedra</small></div></div>
+  <div class="divider"></div>
+  <h3>SELECTED DIAGONAL</h3><div class="field-record"><b id="fieldMatch">τ = 2 · δ = 3</b><p class="hint" id="fieldEquation">Select a contact or change the displacement.</p></div>
+  <h3>CONTACT / LINEAGE</h3><div class="field-record"><div id="fieldDetails" class="hint">Native source will be loaded and checked against the verified event fixture.</div><div class="mono" id="fieldCID"></div></div>
+  <div class="divider"></div><h3>MATHEMATICAL BOUNDARY</h3>
+  <p class="hint">Micro nodes use generation = event sequence − 1 and position = origin strand. Meso edges compare earlier observed events. Macro regions are connected components under the published compatibility predicate, not claims of physical causation or quantum entanglement.</p>
+  <p class="hint" id="fieldAttestation">The browser checks native-projected records against a SHA-256-verified fixture. Live session projections use the same declared rule in JavaScript and are not independently executed by C on Vercel.</p>
  </aside>
 </div>
 <footer><span class="log" id="status" role="status">Initializing local evidence engine…</span><span class="note">SVG is a projection of the journal · local browser execution only</span></footer>
@@ -131,21 +160,122 @@ function render(){const cfg=currentConfig();$('latv').textContent=String(cfg.lam
  const line=document.createElement('p');line.textContent=ms.map((m,i)=>(i===0?'L':'R')+' q='+fmt(m.q)+' / E='+fmt(m.e)).join(' · ');panel.append(line);
  }
  }
+
+/* Chapter 5: native C field snapshot + explicit, separately labeled session projection.
+ * The browser verifies the exact fixture and cross-checks all contact equations;
+ * only the committed static fixture is computed by C. The live journal view is
+ * derived locally using the same documented formulas, not passed off as native.
+ */
+let nativeField=null,nativeError=null,nativeChecked=false,fieldSelected=null;
+function jsField(rows){
+ const nodes=rows.map((r,i)=>({seq:i+1,generation:i,position:r.body.origin_strand,event_cid:r.digest,boundary_x_milli:r.body.boundary_x_milli,lambda_milli:r.body.lambda_milli,affected_count:r.body.affected_strands.length,region:0}));
+ const parent=nodes.map((_,i)=>i),contacts=[],motifs=new Map();
+ const root=(x)=>{while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x;};
+ const join=(a,b)=>{a=root(a);b=root(b);if(a!==b)parent[a]=b;};
+ for(let i=0;i<rows.length;i++)for(let j=0;j<i;j++){
+  const tau=i-j,delta=rows[j].body.origin_strand-rows[i].body.origin_strand;
+  const overlap=rows[i].body.affected_strands.filter(v=>rows[j].body.affected_strands.includes(v)).length;
+  const compatible=tau<=3&&Math.abs(delta)<=6&&overlap>0;
+  if(compatible)join(i,j);
+  contacts.push({from:i+1,to:j+1,tau,delta,invariant:delta*i+tau*rows[i].body.origin_strand,overlap,compatible});
+  const key=tau+':'+delta;
+  if(!motifs.has(key))motifs.set(key,{tau,delta,count:0,overlap_sum:0});
+  const m=motifs.get(key);m.count++;m.overlap_sum+=overlap;
+ }
+ const groups=new Map();nodes.forEach((n,i)=>{const parentID=root(i);groups.set(parentID,Math.min(groups.get(parentID)??Number.MAX_SAFE_INTEGER,i+1));});
+ nodes.forEach((n,i)=>{n.region=groups.get(root(i));});
+ return {schema:'forge.field.v1',source_kind:'browser-derived',source_head:rows.at(-1)?.digest??null,micro:{nodes},meso:{contacts,motifs:[...motifs.values()]},macro:{regions:groups.size,compatible_contacts:contacts.filter(e=>e.compatible).length,candidate_contacts:contacts.length}};
+}
+function checkNativeField(f,expect){
+ assert(f?.schema==='forge.field.v1'&&f.source_head===expect.source_head,'Native field does not match verified fixture head');
+ assert(f.simplicial?.boundary_squared_zero===true,'Native topology reports failed boundary identity');
+ assert(canon(f.micro.nodes)===canon(expect.micro.nodes),'Native micro positions do not match independently derived positions');
+ assert(canon(f.meso.contacts)===canon(expect.meso.contacts),'Native diagonal contacts do not match independently derived equations');
+ assert(canon(f.meso.motifs)===canon(expect.meso.motifs),'Native motif spectrum does not match independently derived spectrum');
+ assert(canon(f.macro)===canon(expect.macro),'Native macro regions do not match independently derived regions');
+}
+async function loadNativeField(){
+ try{
+  const [fieldResponse,sourceResponse]=await Promise.all([fetch('./field.json',{cache:'no-store'}),fetch('./examples/v2_1_verified.jsonl',{cache:'no-store'})]);
+  assert(fieldResponse.ok&&sourceResponse.ok,'Native field or source fixture unavailable');
+  const f=await fieldResponse.json(),raw=await sourceResponse.text();
+  const fixture=raw.split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));
+  await verifyRecords(fixture);
+  checkNativeField(f,jsField(fixture));
+  nativeField=f;nativeChecked=true;nativeError=null;
+  $('nativeStatus').textContent='C fixture · cross-checked';
+ }catch(e){nativeError=e.message;nativeChecked=false;$('nativeStatus').textContent='Native unavailable';}
+ renderField();
+}
+function fieldLabel(parent,x,y,text,color='#d3def5',fontSize=12){const a=svg('text',{x,y,fill:color,'font-size':fontSize},parent);a.textContent=text;return a;}
+function nodePos(n,minG,maxG,baseX,width,top=185,height=430){return {x:baseX+(maxG===minG?.5:(n.generation-minG)/(maxG-minG))*width,y:top+n.position/16*height};}
+function renderField(){
+ if($('screen').value!=='field')return;
+ const isNative=$('fieldSource').value==='native',d=isNative?nativeField:jsField(records.slice(0,visible));
+ const art=$('fieldArt');art.replaceChildren();
+ const title=(x,name,desc)=>{fieldLabel(art,x,68,name,'#eac481',22);fieldLabel(art,x,94,desc,'#9daac8',11);};
+ title(48,'MICRO','POSITIONAL OBSERVATIONS');title(511,'MESO','DIAGONAL RELATIONS');title(992,'MACRO','REGION / SCALE AGGREGATION');
+ for(const x of [470,962])svg('line',{x1:x,y1:116,x2:x,y2:730,stroke:'#9b90c5','stroke-opacity':.3,'stroke-dasharray':'4 9'},art);
+ if(!d){fieldLabel(art,70,230,'Unable to load verified native field','#ffcc97',18);fieldLabel(art,70,262,nativeError||'Loading fixture…','#b4c0d8',12);$('fieldProvenance').textContent='Native unavailable';return;}
+ const n=d.micro.nodes.length,contacts=d.meso.contacts,matching=contacts.filter(e=>e.tau===Number($('fieldTau').value)&&e.delta===Number($('fieldDelta').value));
+ $('fieldNodeCount').textContent=n;$('fieldContactCount').textContent=contacts.length;
+ $('fieldRegionCount').textContent=d.macro.regions;$('fieldSimplexCount').textContent=isNative?d.simplicial.tetrahedra:'—';
+ $('fieldProvenance').textContent=isNative?(nativeChecked?'Native C / cross-verified':'Native loading'):'Browser session / derived';
+ const tau=Number($('fieldTau').value),delta=Number($('fieldDelta').value);
+ $('fieldMatch').textContent='τ = '+tau+' · δ = '+delta+' · '+matching.length+' contact(s)';
+ $('fieldEquation').textContent='For each match: '+delta+'g + '+tau+'p = constant. '+matching.filter(c=>c.compatible).length+' match(es) satisfy the declared compatibility rule.';
+ $('fieldAttestation').textContent=isNative?'C-generated projection verified against the independently hashed JSONL fixture. The browser cross-checks positions, contacts, motif counts and macro grouping; it does not re-run C topology.':'Session projection computed in browser JavaScript using the same bounded contact rule. No native C execution or server persistence occurs for session events.';
+ if(!n){fieldLabel(art,95,345,'No session events. Choose MAKE BECOMING in OMISSION mode.','#a8b7d0',15);$('fieldDetails').textContent='No events recorded.';$('fieldCID').textContent='';return;}
+ const seen=d.micro.nodes.slice(Math.max(0,n-36));const minG=seen[0].generation,maxG=seen.at(-1).generation;
+ const mpos=new Map(),epos=new Map();
+ for(const q of seen){mpos.set(q.seq,nodePos(q,minG,maxG,85,328));epos.set(q.seq,nodePos(q,minG,maxG,545,340));}
+ for(let k=0;k<=16;k+=4){const y=185+k/16*430;svg('line',{x1:65,y1:y,x2:429,y2:y,stroke:'#b3a3d1','stroke-opacity':.15},art);fieldLabel(art,44,y+4,String(k),'#8797bb',11);}
+ for(const q of seen){const a=mpos.get(q.seq);svg('line',{x1:a.x,y1:172,x2:a.x,y2:638,stroke:'#7e8cba','stroke-opacity':.13},art);svg('circle',{cx:a.x,cy:a.y,r:8,fill:'#d9b674',filter:'url(#fieldGlow)'},art);fieldLabel(art,a.x-10,a.y-17,'g'+q.generation,'#e7d2a9',11);fieldLabel(art,a.x+10,a.y+21,'p'+q.position,'#9aadd4',10);}
+ const visibleEdges=contacts.filter(e=>epos.has(e.from)&&epos.has(e.to));
+ for(const e of visibleEdges){const a=epos.get(e.from),b=epos.get(e.to),hit=e.tau===tau&&e.delta===delta;
+  const color=hit?(e.compatible?'#f6c77c':'#e8a0ec'):(e.compatible?'#74d8d2':'#7d739a');
+  const edge=svg('path',{d:`M${a.x},${a.y} Q${(a.x+b.x)/2},${Math.min(a.y,b.y)-70} ${b.x},${b.y}`,stroke:color,'stroke-width':hit?4:e.compatible?2:1,fill:'none','stroke-opacity':hit?1:e.compatible?.75:.25,'stroke-dasharray':e.compatible?'none':'5 7'},art);
+  edge.style.cursor='pointer';edge.addEventListener('click',()=>{fieldSelected=e;renderField();});
+  if(hit){const x=(a.x+b.x)/2,y=(a.y+b.y)/2-38;fieldLabel(art,x,y,'Δ('+tau+','+delta+') = '+e.invariant,'#edc789',12);}
+ }
+ for(const q of seen){const a=epos.get(q.seq);let fill=q.region%2?'#d6af70':'#8fcbce';const c=svg('circle',{cx:a.x,cy:a.y,r:9,fill,stroke:'#e0d9e9','stroke-width':1},art);c.style.cursor='pointer';c.addEventListener('click',()=>{fieldSelected={node:q};renderField();});fieldLabel(art,a.x+10,a.y-12,'#'+q.seq,'#d1dbea',11);}
+ const regionNums=[...new Set(d.micro.nodes.map(q=>q.region))].sort((a,b)=>a-b);
+ const sizes=new Map(regionNums.map(r=>[r,d.micro.nodes.filter(q=>q.region===r).length]));
+ regionNums.slice(0,12).forEach((r,i)=>{const col=i%3,row=Math.floor(i/3),x=1047+col*120,y=235+row*105;
+  const radius=22+Math.min(24,(sizes.get(r)-1)*4);svg('circle',{cx:x,cy:y,r:radius,fill:col%2?'#5c51792c':'#347a7640',stroke:col%2?'#ad94e3':'#88d1c9','stroke-width':2},art);svg('circle',{cx:x,cy:y,r:radius+7,fill:'none',stroke:'#dab477','stroke-opacity':.27},art);
+  fieldLabel(art,x-16,y+5,'R'+r,'#f1d9ad',13);fieldLabel(art,x-17,y+radius+26,sizes.get(r)+' nodes','#b2bcd8',10);
+ });
+ if(regionNums.length>12)fieldLabel(art,1010,720,'+'+(regionNums.length-12)+' additional regions not pictured','#9faeca',12);
+ fieldLabel(art,48,695,'g = seq − 1  /  p = origin_strand','#aab5cd',12);
+ fieldLabel(art,510,695,'Observed comparisons ≠ causal proof','#aab5cd',12);
+ fieldLabel(art,1000,695,'Component rule: τ≤3, |δ|≤6, overlap>0','#aab5cd',11);
+ svg('line',{x1:45,y1:723,x2:1360,y2:723,stroke:'#d7af78','stroke-opacity':.35},art);
+ fieldLabel(art,48,756,isNative?'SOURCE: NATIVE C / HASH-VERIFIED FIXTURE':'SOURCE: BROWSER SESSION / DERIVED',isNative?'#8ce5d4':'#e7bc7e',12);
+ fieldLabel(art,835,756,'∂² = '+(isNative?'0 (C reported)':'not recomputed')+' ·  R = '+d.macro.regions,'#c0b2db',12);
+ const chosen=fieldSelected?.node?{node:fieldSelected.node}:fieldSelected&&!('node' in fieldSelected)?fieldSelected:matching[0];
+ if(chosen?.node){const q=chosen.node;$('fieldDetails').textContent='Node #'+q.seq+' · (g,p)=('+q.generation+','+q.position+') · region R'+q.region+' · latency '+(q.lambda_milli/1000).toFixed(3);$('fieldCID').textContent=q.event_cid;}
+ else if(chosen){const q=d.micro.nodes[chosen.from-1],r=d.micro.nodes[chosen.to-1];$('fieldDetails').textContent='Event '+chosen.from+' ('+q.generation+','+q.position+') → event '+chosen.to+' ('+r.generation+','+r.position+') · invariant '+chosen.invariant+' · overlap '+chosen.overlap+' · '+(chosen.compatible?'COMPATIBLE':'comparison only');$('fieldCID').textContent='from '+q.event_cid.slice(0,23)+'… / to '+r.event_cid.slice(0,23)+'…';}
+ else{$('fieldDetails').textContent='No contacts at the selected displacement. Try τ=2 and δ=3.';$('fieldCID').textContent=d.source_head??'';}
+}
+function switchScreen(){const mode=$('screen').value,field=mode==='field';$('scene').hidden=field;$('fieldScene').hidden=!field;$('fieldToolbar').hidden=!field;$('omissionInspector').hidden=field;$('fieldInspector').hidden=!field;if(field)renderField();else render();}
+$('screen').onchange=switchScreen;
+for(const id of ['fieldSource','fieldTau','fieldDelta'])$(id).oninput=()=>{fieldSelected=null;renderField();};
+
 function pick(seq){visible=seq;seqSelected=seq;render();}
 async function append(){if(busy)return;busy=true;try{assert(records.length<MAX_EVENTS,'Journal is full');assert(!!crypto?.subtle,'SHA-256 requires HTTPS or localhost');const seq=records.length+1;const parent=records.at(-1)?.digest??null;
- const b=nextBody(seq,currentConfig(),parent,seq*1000);validateBody(b,seq,parent);const row={body:b,digest:await digest(b)};records=[...records,row];pick(seq);status('ADMITTED '+row.digest.slice(0,21)+'… · event '+seq+' · immutable historical boundary');}
+ const b=nextBody(seq,currentConfig(),parent,seq*1000);validateBody(b,seq,parent);const row={body:b,digest:await digest(b)};records=[...records,row];pick(seq);renderField();status('ADMITTED '+row.digest.slice(0,21)+'… · event '+seq+' · immutable historical boundary');}
  catch(e){status('ERROR: '+e.message);}finally{busy=false;render();}}
 function exportJournal(){const data=records.map(row=>canon(row)).join('\n')+(records.length?'\n':'');const url=URL.createObjectURL(new Blob([data],{type:'application/x-ndjson'}));const a=document.createElement('a');a.href=url;a.download='forge-v2_1-evidence.jsonl';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);status('Exported '+records.length+' event(s) as canonical subset JSONL');}
 async function importJournal(file){if(busy)return;busy=true;render();try{assert(file.size<3*1024*1024,'Import exceeds 3 MB');const text=await file.text();const lines=text.split(/\r?\n/).filter(s=>s.trim());assert(lines.length<=MAX_EVENTS,'Too many events');const candidate=lines.map((line,i)=>{try{return JSON.parse(line);}catch{throw Error('Invalid JSON line '+(i+1));}});
- await verifyRecords(candidate);records=candidate.map(row=>({body:Object.freeze(row.body),digest:row.digest}));$('view').value='historical';pick(records.length);status('IMPORTED & VERIFIED '+records.length+' canonical event(s) · cold replay succeeded');}
+ await verifyRecords(candidate);records=candidate.map(row=>({body:Object.freeze(row.body),digest:row.digest}));$('view').value='historical';pick(records.length);renderField();status('IMPORTED & VERIFIED '+records.length+' canonical event(s) · cold replay succeeded');}
  catch(e){status('IMPORT REJECTED: '+e.message);}finally{busy=false;$('file').value='';render();}}
 async function verify(){if(busy)return;busy=true;render();try{await verifyRecords(records);status('VERIFIED '+records.length+' records · canonical integer schema · SHA-256 parent chain');}catch(e){status('VERIFY FAILED: '+e.message);}finally{busy=false;render();}}
 $('step').onclick=append;$('export').onclick=exportJournal;$('import').onclick=()=>$('file').click();$('file').onchange=()=>{if($('file').files[0])importJournal($('file').files[0]);};$('verify').onclick=verify;
 $('prev').onclick=()=>{if(seqSelected>1)pick(seqSelected-1);};$('next').onclick=()=>{if(seqSelected<records.length)pick(seqSelected+1);};
-$('reset').onclick=()=>{if(records.length&&!confirm('Clear the local journal? Export JSONL first if you want to retain it.'))return;records=[];visible=0;seqSelected=0;$('view').value='historical';render();status('Local journal cleared; no browser persistence or network write');};
+$('reset').onclick=()=>{if(records.length&&!confirm('Clear the local journal? Export JSONL first if you want to retain it.'))return;records=[];visible=0;seqSelected=0;$('view').value='historical';render();renderField();status('Local journal cleared; no browser persistence or network write');};
 for(const id of ['lat','regen','view','basin'])$(id).oninput=render;
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.key==='ArrowLeft'&&seqSelected>1)pick(seqSelected-1);if(e.key==='ArrowRight'&&seqSelected<records.length)pick(seqSelected+1);});
-status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();
+status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();loadNativeField();
 })();
 </script>
 </body></html>

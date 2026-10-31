@@ -114,3 +114,15 @@ The native kernel now supports `occlude`, a strict event-verified, coarse band p
 ## Chapter 7 status
 
 An initial single-machine, pinned Ed25519 grant and nonce-bound `relation.assert` executor is implemented, with an offline committed receipt, independent C verification, PHP cold audit, and a public static four-mode inspector. Delegated grants, arbitrary effects, network quorum, and independent witness finality remain future work.
+
+
+### Chapter 8 realization — native bounded continuation
+
+- [x] Verified event records drive the native double-well potential and two deterministic, bounded gradient descents.
+- [x] Divergent minima remain separate, with numerical trace and finite-step stability criteria.
+- [x] Reconciliation emits a proposed `relation.assert` witness with explicit absence of grant/execution.
+- [x] A separate, local content-addressed proposal journal supports idempotent planning and audit.
+- [x] Static V2.5 projection reads independently checked native `minima.json` without browser-side effect authority.
+- [ ] Signed, grant-authorized commit of a selected proposal in the journal (future integration, distinct from generating proposals).
+- [ ] Bounded multi-round regeneration from user-defined campaign goals (not yet implemented).
+- [ ] Formal proof of confluence for any general rewrite system (not established).

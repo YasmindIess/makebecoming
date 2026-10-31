@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FORGE / Truthful Latency & Native Fields V2.2</title>
+<title>FORGE / Bounded Confluence V2.5</title>
 <meta name="description" content="A replayable, content-addressed omission observatory: historical latency, counterfactuals, real basin detection and JSONL evidence.">
 <style>
 :root{color-scheme:dark;--bg:#080b13;--panel:#111523;--muted:#a0abc5;--ink:#edf1fa;--gold:#e8bb74;--violet:#b39af6;--cyan:#74ded6;--line:#30374e}
@@ -17,7 +17,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 @media(max-width:960px){.space{grid-template-columns:minmax(0,1fr) 245px}aside{padding:10px}.brand{min-width:180px}header{padding:8px 12px}}
 @media(max-width:690px){.app{grid-template-rows:auto minmax(0,1fr) auto}.space{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,33%)}aside{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:auto;padding:8px 12px}aside h2,.hint,.divider{display:none}.kv{font-size:10px;grid-template-columns:70px minmax(0,1fr);gap:4px}.basin{padding:5px}.basin p{font-size:10px}header{gap:6px 10px}.brand{width:100%;margin:0}.brand strong{font-size:14px}.brand small{display:none}.ctl{font-size:10px}.ctl input[type=range]{width:74px}.actions{gap:3px}.actions button{padding:5px 7px;font-size:11px}footer{padding:4px 10px;min-height:29px}footer .note{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-.viz{isolation:isolate}svg[hidden],aside[hidden],.fieldbar[hidden],.occlusionbar[hidden],.grantbar[hidden]{display:none!important}
+.viz{isolation:isolate}svg[hidden],aside[hidden],.fieldbar[hidden],.occlusionbar[hidden],.grantbar[hidden],.confluencebar[hidden]{display:none!important}
 .fieldbar{position:absolute;z-index:5;top:12px;right:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 12px;border:1px solid #49435d;border-radius:10px;background:rgba(11,12,27,.95);backdrop-filter:blur(9px);font-size:11px}
 .fieldbar label{display:flex;gap:5px;align-items:center;color:#d7ddf5}.fieldbar input{width:45px;padding:5px;border:1px solid #5b5a70;background:#191e30;border-radius:5px;color:white}.fieldbar select{max-width:160px}.fieldbar .confirmed{color:#90e6d7}
 .field-record{border:1px solid #494761;padding:11px;border-radius:9px;background:#181b31}.field-record b{color:var(--gold)}.field-record .mono{font:10px ui-monospace,monospace;overflow-wrap:anywhere;color:var(--cyan)}
@@ -38,6 +38,9 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 .grantbox{border:1px solid #474564;border-radius:9px;background:#191b30;padding:10px;overflow-wrap:anywhere}
 .grantbox strong{color:#e7bf82}.grantbox p{margin:5px 0;color:#a9b8cf;font-size:11px}
 @media(max-width:690px){.grantbar{top:5px;left:5px;right:5px;padding:5px;font-size:10px}.grantbar select{max-width:150px;font-size:10px}}
+.confluencebar{position:absolute;z-index:5;top:12px;right:14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 12px;border:1px solid #7163a0;border-radius:10px;background:rgba(11,12,27,.96);font-size:11px}
+.confluencebar label{display:flex;align-items:center;gap:7px}.confluencebar input[type=range]{width:135px;accent-color:#c2a3e9}
+@media(max-width:690px){.confluencebar{top:4px;left:5px;right:5px;padding:5px;gap:4px}.confluencebar input[type=range]{width:85px}}
 </style>
 </head>
 <body>
@@ -45,7 +48,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 <header>
  <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.4 · NATIVE GRANTS / BECOME / RELATIONAL EVIDENCE</small></div>
  <div class="controls">
-  <label class="ctl">MODE <select id="screen"><option value="omission">OMISSION</option><option value="field">FIELD / MICRO→MACRO</option><option value="occlusion">OCCLUSION / REGEN</option><option value="grants">GRANTS / BECOME</option></select></label>
+  <label class="ctl">MODE <select id="screen"><option value="omission">OMISSION</option><option value="field">FIELD / MICRO→MACRO</option><option value="occlusion">OCCLUSION / REGEN</option><option value="grants">GRANTS / BECOME</option><option value="confluence">CONFLUENCE / AUTO</option></select></label>
   <label class="ctl">λ <input id="lat" type="range" min="0" max="100" value="43"><output id="latv">43</output></label>
   <label class="ctl">REGEN <input id="regen" type="range" min="0" max="100" value="62"><output id="regv">62</output></label>
   <label class="ctl">VIEW <select id="view"><option value="historical">Historical</option><option value="counterfactual">Counterfactual</option></select></label>
@@ -72,6 +75,11 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   <button id="grantCheck">Verify signatures + policy</button>
   <span id="grantStatus">Loading native receipt…</span>
  </div>
+ <div class="confluencebar" id="confluenceToolbar" hidden>
+  <label>DESCENT <input id="confluenceStep" type="range" min="0" max="96" value="96"><output id="confluenceStepVal">final</output></label>
+  <label>BASINS <select id="confluenceView"><option value="both">Retain both</option><option value="left">Left only</option><option value="right">Right only</option></select></label>
+  <span id="confluenceStatus">Loading native descent…</span>
+ </div>
  <svg id="scene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Omission origin, historical latency, first divergence, descendant trajectories and two calculated local minima">
  <defs><radialGradient id="bg"><stop stop-color="#1d1739"/><stop offset=".58" stop-color="#0d1020"/><stop offset="1" stop-color="#060811"/></radialGradient><linearGradient id="ribbon"><stop stop-color="#9b84db"/><stop offset=".52" stop-color="#ddac6a"/><stop offset="1" stop-color="#6bd6d0"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#8e8ca8" stroke-opacity=".12"/></pattern></defs>
  <rect width="1400" height="790" fill="url(#bg)"/><rect width="1400" height="790" fill="url(#grid)"/>
@@ -97,6 +105,10 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
  <svg id="grantScene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chapter 7 signed capability and nonce-bound effect graph" hidden>
   <defs><radialGradient id="grantBg"><stop stop-color="#261b34"/><stop offset="1" stop-color="#090c18"/></radialGradient><filter id="grantGlow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
   <rect width="1400" height="790" fill="url(#grantBg)"/><g id="grantArt"></g>
+ </svg>
+ <svg id="confluenceScene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chapter 8 C-derived energy landscape and bounded autonomous descent toward two distinct minima; reconciliation remains a proposal" hidden>
+  <defs><radialGradient id="confBg"><stop stop-color="#1d153b"/><stop offset="1" stop-color="#080b17"/></radialGradient><filter id="confGlow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect width="1400" height="790" fill="url(#confBg)"/><g id="confluenceArt"></g>
  </svg>
  </section>
  <aside id="omissionInspector" aria-label="Evidence and computed minima inspector">
@@ -141,6 +153,19 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   <div class="grantbox"><strong id="grantEffect">—</strong><p id="grantEffectDetail">Local PHP journal receipt will be checked against native C verification.</p></div>
   <div class="divider"></div>
   <p class="hint" style="display:block">Real Ed25519 fixture signatures are checked with Web Crypto. The C/PHP verifier and one-use commit ran offline; Vercel hosts a static public result, not an execution service. No private keys or new authorizations are generated here.</p>
+ </aside>
+ <aside id="confluenceInspector" aria-label="Native bounded autonomous continuation inspector" hidden>
+  <h2>INSPECT / CONFLUENCE</h2>
+  <div class="pill" id="confluenceProvenance">Loading native output…</div>
+  <div class="grantbox"><strong id="confluenceDecision">Awaiting native result</strong><p id="confluenceReason">No effects can be committed by this view.</p></div>
+  <div class="divider"></div><h3>STABLE BASINS</h3>
+  <div class="field-record" id="confluenceBasins">No native descent loaded yet.</div>
+  <h3>ENERGY / CONSTRAINTS</h3>
+  <div class="field-record" id="confluenceEnergy">Finite model, bounded iterations and preserved event history.</div>
+  <h3>RECONCILIATION WITNESS</h3>
+  <div class="field-record" id="confluenceWitness">Requires signed grant before a local relation can be committed.</div>
+  <div class="divider"></div>
+  <p class="hint" style="display:block">This is C-derived numerical planning over a simulated field. Multiple minima are retained. Neither branch is erased, and the proposed witness is never automatically authorized or committed. No quantum or metaphysical convergence is claimed.</p>
  </aside>
 </div>
 <footer><span class="log" id="status" role="status">Initializing local evidence engine…</span><span class="note">SVG is a projection of the journal · local browser execution only</span></footer>
@@ -504,7 +529,98 @@ function renderGrants(){
 }
 $('grantScenario').onchange=refreshGrants;$('grantCheck').onclick=refreshGrants;
 
-function switchScreen(){const mode=$('screen').value,field=mode==='field',occ=mode==='occlusion',grant=mode==='grants';$('scene').toggleAttribute('hidden',field||occ||grant);$('fieldScene').toggleAttribute('hidden',!field);$('occlusionScene').toggleAttribute('hidden',!occ);$('grantScene').toggleAttribute('hidden',!grant);$('fieldToolbar').hidden=!field;$('occlusionToolbar').hidden=!occ;$('grantToolbar').hidden=!grant;$('omissionInspector').hidden=field||occ||grant;$('fieldInspector').hidden=!field;$('occlusionInspector').hidden=!occ;$('grantInspector').hidden=!grant;$('step').disabled=mode!=='omission'||busy||records.length>=MAX_EVENTS;$('step').title=mode==='omission'?'Create one browser-local simulated omission':'Switch to OMISSION to create a simulated event; this does not invoke the grant executor';if(field)renderField();else if(occ)renderOcclusion();else if(grant)renderGrants();else render();}
+
+/* Chapter 8: independent browser checks on a static, native-generated
+ * bounded numerical plan. A proposal is not an execution receipt. */
+let nativeMinima=null,minimaError=null;
+function energy8(q,m){return m.stiffness*(q*q-.64)**2+4*(q-m.target)**2+.008*m.residual;}
+function grad8(q,m){return 4*m.stiffness*q*(q*q-.64)+8*(q-m.target);}
+async function verifyMinima8(data){
+ assert(data?.schema==='forge.confluence.v1'&&data.source_kind==='native-c-verified-input'&&data.claim_class==='simulated','Invalid confluence schema');
+ const res=await fetch('./examples/v2_1_verified.jsonl',{cache:'no-store'});assert(res.ok,'Native source evidence unavailable');
+ const rows=(await res.text()).split(/\r?\n/).filter(Boolean).map(x=>JSON.parse(x));await verifyRecords(rows);
+ assert(data.source_head===rows.at(-1)?.digest&&data.events===rows.length,'Confluence source/head mismatch');
+ const m=data.model;let signed=0,d=0;
+ for(const r of rows){const b=r.body;signed+=(b.origin_strand-8)*(.4+b.lambda_milli/2000);d+=(b.amplitude_milli/1000)*(1-b.regen_milli/1000);}
+ const target=Math.max(-.22,Math.min(.22,signed/(rows.length*75))),residual=d/rows.length,stiffness=12+Math.min(9,residual/20);
+ assert(Math.abs(m.target-target)<.000002&&Math.abs(m.residual-residual)<.000002&&Math.abs(m.stiffness-stiffness)<.000002,'Native potential parameters disagree with verified records');
+ assert(m.max_steps===96&&Array.isArray(data.branches)&&data.branches.length===2,'Unexpected planner bounds');
+ for(const [i,b] of data.branches.entries()){
+  assert(b.id===(i?'right':'left')&&Number.isFinite(b.final_q),'Invalid branch identity');
+  assert(b.steps>=0&&b.steps<=m.max_steps&&b.trace.length===b.steps+1,'Invalid bounded trajectory');
+  assert(Math.abs(grad8(b.final_q,m))<.0001&&b.stable===true,'Not a stationary basin');
+  assert(Math.abs(energy8(b.final_q,m)-b.final_energy)<.00002,'Wrong basin energy');
+  for(const [k,[q,e]] of b.trace.entries()){
+    assert(q>=-1.5&&q<=1.5&&Math.abs(energy8(q,m)-e)<.00002,'Invalid descent sample');
+    if(k)assert(e<=b.trace[k-1][1]+.000001,'Energy increased');
+  }
+ }
+ assert(data.branches[0].final_q<0&&data.branches[1].final_q>0,'Branch separation absent');
+ const r=data.reconciliation;
+ assert(r.authorized===false&&r.effect_committed===false&&r.preserve_both_branches&&r.requires_grant==='relation.assert','Proposal cannot be a grant');
+ assert(r.from===rows[0].digest&&r.to===rows.at(-1).digest,'Reconciliation provenance mismatch');
+ assert(data.selection.selected_for_commit===false&&data.limits.external_effects===false,'Unexpected external effect');
+ return true;
+}
+async function loadMinima8(){
+ try{const response=await fetch('./minima.json',{cache:'no-store'});assert(response.ok,'Native minima file unavailable');
+  const data=await response.json();await verifyMinima8(data);nativeMinima=data;
+  $('confluenceStatus').textContent='C output · independently checked';
+ }catch(err){minimaError=err.message;$('confluenceStatus').textContent='Planner unavailable';}
+ renderConfluence8();
+}
+function renderConfluence8(){
+ if($('screen').value!=='confluence')return;
+ const art=$('confluenceArt');art.replaceChildren();
+ const label=(x,y,t,size=14,color='#dbe1f3')=>fieldLabel(art,x,y,t,color,size);
+ label(45,62,'CONFLUENT MINIMA / BOUNDED AUTONOMY',26,'#e8bd7e');
+ label(45,94,'LOCAL ENERGY DESCENT · DIVERGENT HISTORIES RETAINED · NO AUTOMATIC AUTHORITY',12,'#a6b5d1');
+ const d=nativeMinima;
+ if(!d){label(65,245,minimaError||'Awaiting native plan…',18,'#e4ac9d');return;}
+ const m=d.model,branches=d.branches,shown=$('confluenceView').value;
+ const maxlen=Math.max(...branches.map(b=>b.steps));$('confluenceStep').max=String(maxlen);
+ const slider=Number($('confluenceStep').value),step=Math.min(maxlen,slider);
+ $('confluenceStepVal').textContent=step===maxlen?'final':step+' / '+maxlen;
+ const xOf=q=>130+(q+1.5)/3*1100, yOf=e=>Math.max(142,Math.min(605,610-e*12.2));
+ for(let k=0;k<=6;k++){
+   const q=-1.5+k*.5,x=xOf(q);svg('line',{x1:x,y1:162,x2:x,y2:616,stroke:'#777ca8','stroke-opacity':.17,'stroke-dasharray':'4 9'},art);
+   label(x-14,641,q.toFixed(1),11,'#8f9eb7');
+ }
+ for(let k=0;k<=7;k++){
+  const e=k*5,y=yOf(e);svg('line',{x1:104,y1:y,x2:1235,y2:y,stroke:'#9299ad','stroke-opacity':.12},art);
+  label(65,y+5,String(e),11,'#98a6c0');
+ }
+ let curve='';for(let i=0;i<=270;i++){const q=-1.5+3*i/270;curve+=(i?'L':'M')+xOf(q).toFixed(2)+' '+yOf(energy8(q,m)).toFixed(2)+' ';}
+ svg('path',{d:curve,fill:'none',stroke:'#a68fdb','stroke-width':2.5},art);
+ svg('circle',{cx:xOf(0),cy:yOf(m.barrier_energy),r:6,fill:'#d6ab6c',filter:'url(#confGlow)'},art);
+ label(xOf(0)+14,yOf(m.barrier_energy)-9,'BARRIER E(0)',12,'#e4bf89');
+ for(let i=0;i<branches.length;i++){
+  const b=branches[i];if(shown!=='both'&&shown!==b.id)continue;
+  const color=i?'#78d9d0':'#e6ba75',visible=b.trace.slice(0,Math.min(b.steps,step)+1);
+  let trace='';visible.forEach(([q,e],j)=>trace+=(j?'L':'M')+xOf(q)+' '+yOf(e)+' ');
+  svg('path',{d:trace,fill:'none',stroke:color,'stroke-width':5,'stroke-opacity':.82,filter:'url(#confGlow)'},art);
+  const [q,e]=visible.at(-1);svg('circle',{cx:xOf(q),cy:yOf(e),r:10,fill:color,stroke:'#fff5dd','stroke-width':1.5},art);
+  label(xOf(q)-22,yOf(e)-20,b.id.toUpperCase(),14,color);
+  svg('circle',{cx:xOf(b.final_q),cy:yOf(b.final_energy),r:14,fill:'none',stroke:color,'stroke-dasharray':'3 4','stroke-width':1.8},art);
+ }
+ if(d.reconciliation.candidate){
+  const a=branches[0],b=branches[1],ax=xOf(a.final_q),bx=xOf(b.final_q);
+  svg('path',{d:`M${ax} ${yOf(a.final_energy)-14} Q ${xOf(0)} 180 ${bx} ${yOf(b.final_energy)-14}`,fill:'none',stroke:'#e0ba77','stroke-width':2,'stroke-dasharray':'7 7'},art);
+  label(495,188,'WITNESS CANDIDATE · NOT COMMITTED',13,'#d8ba83');
+ }
+ label(80,702,'SOURCE: VERIFIED EVENT DAG · '+d.events+' EVENTS · '+d.source_head.slice(0,23)+'…',12,'#a9b7d1');
+ label(80,733,'DESCENT ≤ '+m.max_steps+' STEPS · LOCAL MINIMA ONLY · NO AUTHORITY TRANSFER',12,'#debd85');
+ $('confluenceProvenance').textContent='Native C source · independently checked';
+ $('confluenceDecision').textContent=d.reconciliation.candidate?'WITNESS PROPOSED · NOT AUTHORIZED':'NO RECONCILIATION CANDIDATE';
+ $('confluenceReason').textContent=d.reconciliation.reason;
+ $('confluenceBasins').textContent=branches.map(b=>b.id.toUpperCase()+' q='+b.final_q.toFixed(4)+' / E='+b.final_energy.toFixed(4)+' / '+b.steps+' steps').join(' · ');
+ $('confluenceEnergy').textContent='E(q)=a(q²−0.64)²+4(q−s)²+0.008D · a='+m.stiffness.toFixed(3)+' · s='+m.target.toFixed(3)+' · D='+m.residual.toFixed(3)+' · E(0)='+m.barrier_energy.toFixed(3);
+ $('confluenceWitness').textContent=d.reconciliation.from.slice(0,22)+'… → '+d.reconciliation.to.slice(0,22)+'… · requires signed '+d.reconciliation.requires_grant+' grant · no nonce consumed.';
+}
+$('confluenceStep').oninput=renderConfluence8;
+$('confluenceView').onchange=renderConfluence8;
+
+function switchScreen(){const mode=$('screen').value,field=mode==='field',occ=mode==='occlusion',grant=mode==='grants',conf=mode==='confluence';$('scene').toggleAttribute('hidden',field||occ||grant||conf);$('fieldScene').toggleAttribute('hidden',!field);$('occlusionScene').toggleAttribute('hidden',!occ);$('grantScene').toggleAttribute('hidden',!grant);$('confluenceScene').toggleAttribute('hidden',!conf);$('fieldToolbar').hidden=!field;$('occlusionToolbar').hidden=!occ;$('grantToolbar').hidden=!grant;$('confluenceToolbar').hidden=!conf;$('omissionInspector').hidden=field||occ||grant||conf;$('fieldInspector').hidden=!field;$('occlusionInspector').hidden=!occ;$('grantInspector').hidden=!grant;$('confluenceInspector').hidden=!conf;$('step').disabled=mode!=='omission'||busy||records.length>=MAX_EVENTS;$('step').title=mode==='omission'?'Create one browser-local simulated omission':'Switch to OMISSION to create a simulated event; this does not invoke the grant executor';if(field)renderField();else if(occ)renderOcclusion();else if(grant)renderGrants();else if(conf)renderConfluence8();else render();}
 $('screen').onchange=switchScreen;
 $('occlusionSource').onchange=()=>{$('occlusionCandidate').value='1';renderOcclusion();};
 $('occlusionCandidate').oninput=renderOcclusion;
@@ -524,7 +640,7 @@ $('prev').onclick=()=>{if(seqSelected>1)pick(seqSelected-1);};$('next').onclick=
 $('reset').onclick=()=>{if(records.length&&!confirm('Clear the local journal? Export JSONL first if you want to retain it.'))return;records=[];visible=0;seqSelected=0;$('view').value='historical';render();renderField();renderOcclusion();status('Local journal cleared; no browser persistence or network write');};
 for(const id of ['lat','regen','view','basin'])$(id).oninput=render;
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.key==='ArrowLeft'&&seqSelected>1)pick(seqSelected-1);if(e.key==='ArrowRight'&&seqSelected<records.length)pick(seqSelected+1);});
-status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();loadNativeField();loadOcclusion();loadGrants();
+status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();loadNativeField();loadOcclusion();loadGrants();loadMinima8();
 })();
 </script>
 </body></html>

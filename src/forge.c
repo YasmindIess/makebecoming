@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <math.h>
 #include <openssl/evp.h>
 
 #define MAX_EVENTS 250
@@ -383,6 +384,84 @@ static void occlusion_write(FILE *out,const Omission *rows,int n){
     fprintf(out,"]},\"limitations\":\"The published deterministic demo fixture is independently accessible; coarse projection alone cannot confer real confidentiality. Candidate examples are compatible possibilities, not recovered hidden truth.\"}\n");
     free(parent);
 }
+
+/* Chapter 8: deterministic, finite-budget autonomous *proposal* generation.
+ * Input JSONL is verified by the existing native SHA-256 and parent-chain
+ * validator before this function can be called. This code never commits effects,
+ * mints an authorization, or alters the signed Chapter 7 journal.
+ */
+#define MAX_DESCENT 96
+typedef struct {double q[MAX_DESCENT+1],energy[MAX_DESCENT+1];int length;double grad;} BasinTrace;
+static double min_energy(double q,double a,double target,double residual){
+    double gap=q*q-0.64;
+    return a*gap*gap+4.0*(q-target)*(q-target)+0.008*residual;
+}
+static double min_gradient(double q,double a,double target){
+    return 4.0*a*q*(q*q-0.64)+8.0*(q-target);
+}
+static BasinTrace descend(double start,double a,double target,double residual){
+    BasinTrace t={0};t.q[0]=start;t.energy[0]=min_energy(start,a,target,residual);t.length=1;
+    for(int step=0;step<MAX_DESCENT;step++){
+        double q=t.q[t.length-1],e=t.energy[t.length-1];
+        double g=min_gradient(q,a,target);
+        if(fabs(g)<=0.0000005)break;
+        double eta=0.02,next=q;
+        int accepted=0;
+        for(int trial=0;trial<25;trial++){
+            next=q-eta*g;
+            if(next>=-1.5&&next<=1.5&&next*start>0.0&&min_energy(next,a,target,residual)<e-1.0e-14){accepted=1;break;}
+            eta*=0.5;
+        }
+        if(!accepted)break;
+        t.q[t.length]=next;t.energy[t.length]=min_energy(next,a,target,residual);t.length++;
+    }
+    t.grad=min_gradient(t.q[t.length-1],a,target);
+    return t;
+}
+static void minima_write(FILE *out,const Omission *rows,int n){
+    double signed_sum=0,residual_sum=0;
+    for(int i=0;i<n;i++){
+        signed_sum+=(rows[i].origin_strand-8)*(0.4+rows[i].lambda_milli/2000.0);
+        residual_sum+=(rows[i].amplitude_milli/1000.0)*(1.0-rows[i].regen_milli/1000.0);
+    }
+    double target=n?signed_sum/(n*75.0):0.0;
+    if(target>0.22)target=0.22;
+    if(target< -0.22)target=-0.22;
+    double residual=n?residual_sum/n:0;
+    double stiffness=12.0+fmin(9.0,residual/20.0);
+    BasinTrace left=descend(-1.35,stiffness,target,residual);
+    BasinTrace right=descend(1.35,stiffness,target,residual);
+    double l=left.q[left.length-1],r=right.q[right.length-1];
+    double le=left.energy[left.length-1],re=right.energy[right.length-1];
+    double barrier=min_energy(0.0,stiffness,target,residual);
+    int stable=fabs(left.grad)<0.00001&&fabs(right.grad)<0.00001;
+    int separate=r-l>0.20;
+    int eligible=n>=2&&stable&&separate&&le<barrier&&re<barrier;
+    const char *preferred=le<=re?"left":"right";
+    fprintf(out,"{\"schema\":\"forge.confluence.v1\",\"source_kind\":\"native-c-verified-input\",\"claim_class\":\"simulated\",\"source_head\":");
+    if(n)fprintf(out,"\"%s\"",rows[n-1].digest);else fputs("null",out);
+    fprintf(out,",\"events\":%d,\"model\":{\"name\":\"bounded-double-well.v1\",\"stiffness\":%.6f,\"target\":%.6f,\"residual\":%.6f,\"barrier_energy\":%.6f,\"domain\":[-1.5,1.5],\"max_steps\":%d,\"gradient_tolerance\":0.00001,\"derivation\":\"verified origin strands, latency, amplitude and regen; no physical causation claim\"},",
+        n,stiffness,target,residual,barrier,MAX_DESCENT);
+    fprintf(out,"\"branches\":[");
+    const BasinTrace *traces[2]={&left,&right};
+    for(int b=0;b<2;b++){
+        const BasinTrace *t=traces[b];
+        fprintf(out,"%s{\"id\":\"%s\",\"seed_q\":%.6f,\"final_q\":%.6f,\"final_energy\":%.6f,\"gradient\":%.8f,\"stable\":%s,\"steps\":%d,\"trace\":[",
+            b?",":"",b?"right":"left",t->q[0],t->q[t->length-1],t->energy[t->length-1],t->grad,fabs(t->grad)<0.00001?"true":"false",t->length-1);
+        for(int i=0;i<t->length;i++)fprintf(out,"%s[%.6f,%.6f]",i?",":"",t->q[i],t->energy[i]);
+        fputs("]}",out);
+    }
+    fprintf(out,"],\"selection\":{\"policy\":\"lowest-admissible-local-energy\",\"preferred\":\"%s\",\"selected_for_commit\":false},",preferred);
+    fprintf(out,"\"reconciliation\":{\"candidate\":%s,\"type\":\"witness-relation-proposal\",\"preserve_both_branches\":true,\"gap\":%.6f,\"from\":",
+        eligible?"true":"false",fabs(r-l));
+    if(n>=2)fprintf(out,"\"%s\"",rows[0].digest);else fputs("null",out);
+    fputs(",\"to\":",out);
+    if(n>=2)fprintf(out,"\"%s\"",rows[n-1].digest);else fputs("null",out);
+    fprintf(out,",\"requires_grant\":\"relation.assert\",\"authorized\":false,\"effect_committed\":false,\"reason\":\"%s\"},",
+        eligible?"both stationary basins below intervening potential; representational witness only":"missing distinct stable compatible branches or insufficient provenance");
+    fputs("\"limits\":{\"autonomy\":\"bounded-numerical-planning-only\",\"persistence\":\"none-new\",\"external_effects\":false,\"global_confluence_proven\":false}}\n",out);
+}
+
 static void replay(FILE *in,const char *outname,int mode){
     Omission *rows=calloc(MAX_EVENTS,sizeof(Omission));require(rows!=NULL,"record allocation failed");Complex k;complex_init(&k);
     char *line=NULL;size_t cap=0;ssize_t len;int n=0;uint32_t previous_receipt=UINT32_MAX;
@@ -408,7 +487,7 @@ static void replay(FILE *in,const char *outname,int mode){
     memset(counts,0,sizeof(counts));for(uint32_t i=0;i<k.n;i++)counts[k.items[i].dim]++;
     int comp=components(&k);int64_t chi=counts[0]-counts[1]+counts[2]-counts[3];
     if(outname){FILE *out=fopen(outname,"wb");require(out!=NULL,"failed to create topology output");topology_write(out,&k,rows,n);require(!ferror(out)&&fclose(out)==0,"failed writing topology output");}
-    if(mode){if(mode==2)occlusion_write(stdout,rows,n);else field_write(stdout,rows,n,counts,1);complex_free(&k);free(rows);return;}
+    if(mode){if(mode==3)minima_write(stdout,rows,n);else if(mode==2)occlusion_write(stdout,rows,n);else field_write(stdout,rows,n,counts,1);complex_free(&k);free(rows);return;}
     printf("{\"schema\":\"forge.kernel.r0\",\"events\":%d,\"verified\":true,\"boundary_squared_zero\":true,\"vertices\":%lld,\"edges\":%lld,\"faces\":%lld,\"tetrahedra\":%lld,\"connected_components\":%d,\"euler_characteristic\":%lld,\"head\":",n,(long long)counts[0],(long long)counts[1],(long long)counts[2],(long long)counts[3],comp,(long long)chi);
     if(n)printf("\"%s\"",rows[n-1].digest);else printf("null");puts("}");
     complex_free(&k);free(rows);
@@ -422,6 +501,10 @@ static void simplex_cli(const char *arg){
 }
 int main(int argc,char **argv){
     if(argc==3&&!strcmp(argv[1],"simplex")){simplex_cli(argv[2]);return 0;}
+    if(argc==3&&!strcmp(argv[1],"minima")){
+       FILE *in=!strcmp(argv[2],"-")?stdin:fopen(argv[2],"rb");require(in!=NULL,"cannot open JSONL input");
+       replay(in,NULL,3);if(in!=stdin)fclose(in);return 0;
+    }
     if(argc==3&&!strcmp(argv[1],"occlude")){
        FILE *in=!strcmp(argv[2],"-")?stdin:fopen(argv[2],"rb");require(in!=NULL,"cannot open JSONL input");
        replay(in,NULL,2);if(in!=stdin)fclose(in);return 0;
@@ -435,5 +518,5 @@ int main(int argc,char **argv){
        if(argc==5){require(!strcmp(argv[3],"--topology"),"expected --topology <path>");out=argv[4];require(strcmp(path,out)!=0,"input and topology output must be different files");}
        FILE *in=!strcmp(path,"-")?stdin:fopen(path,"rb");require(in!=NULL,"cannot open JSONL input");replay(in,out,0);if(in!=stdin)fclose(in);return 0;
     }
-    fprintf(stderr,"Usage: %s simplex 4,1,2,3\n       %s replay events.jsonl [--topology derived.jsonl]\n       %s field events.jsonl > field.json\n       %s occlude events.jsonl > occlusion-public.json\n",argv[0],argv[0],argv[0],argv[0]);return 2;
+    fprintf(stderr,"Usage: %s simplex 4,1,2,3\n       %s replay events.jsonl [--topology derived.jsonl]\n       %s field events.jsonl > field.json\n       %s occlude events.jsonl > occlusion-public.json\n       %s minima events.jsonl > minima.json\n",argv[0],argv[0],argv[0],argv[0],argv[0]);return 2;
 }

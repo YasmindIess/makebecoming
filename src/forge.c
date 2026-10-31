@@ -301,7 +301,89 @@ static void field_write(FILE *out,const Omission *rows,int n,const int64_t *cnt,
     free(parents);free(motifs);
 }
 
-static void replay(FILE *in,const char *outname,int field_only){
+
+/* Chapter 6: bounded non-injective coarse projection and inverse-image search.
+ * Only compatible-contact adjacency and positional bins are disclosed.
+ * This is a mathematical demonstrator, NOT anonymity or a secrecy guarantee:
+ * the original fixture and deterministic generator are already public.
+ */
+#define OCCLUSION_LIMIT 6
+#define OCCLUSION_EXAMPLES 6
+typedef struct {
+    int n, lo[OCCLUSION_LIMIT], hi[OCCLUSION_LIMIT];
+    int expected[OCCLUSION_LIMIT][OCCLUSION_LIMIT];
+    int pick[OCCLUSION_LIMIT];
+    uint64_t solutions;
+    int examples[OCCLUSION_EXAMPLES][OCCLUSION_LIMIT];
+} Regeneration;
+static void regeneration_search(Regeneration *r,int depth){
+    if(depth==r->n){
+        if(r->solutions<OCCLUSION_EXAMPLES)
+            memcpy(r->examples[r->solutions],r->pick,(size_t)r->n*sizeof(int));
+        r->solutions++;
+        return;
+    }
+    for(int x=r->lo[depth];x<=r->hi[depth];x++){
+        int fits=1;
+        for(int j=0;j<depth;j++){
+            int delta=abs(x-r->pick[j]);
+            int compatible=(depth-j<=3&&delta<=6);
+            if(compatible!=r->expected[depth][j]){fits=0;break;}
+        }
+        if(fits){r->pick[depth]=x;regeneration_search(r,depth+1);}
+    }
+}
+static void occlusion_write(FILE *out,const Omission *rows,int n){
+    int *parent=calloc((size_t)n+1,sizeof(int));
+    require(parent!=NULL,"occlusion graph allocation failed");
+    for(int i=0;i<n;i++)parent[i]=i;
+    int compatible_count=0;
+    for(int i=0;i<n;i++)for(int j=0;j<i;j++){
+        int delta=(int)(rows[j].origin_strand-rows[i].origin_strand);
+        int good=field_compatible(i-j,delta,strand_overlap(&rows[i],&rows[j]));
+        if(good){funite(parent,i,j);compatible_count++;}
+    }
+    int regions=0;
+    for(int i=0;i<n;i++)if(froot(parent,i)==i)regions++;
+    Regeneration r={0};
+    if(n<=OCCLUSION_LIMIT){
+        r.n=n;
+        for(int i=0;i<n;i++){
+            int band=(int)(rows[i].origin_strand/4);
+            r.lo[i]=band*4;r.hi[i]=(band==4)?16:band*4+3;
+            for(int j=0;j<i;j++){
+                int delta=(int)(rows[j].origin_strand-rows[i].origin_strand);
+                r.expected[i][j]=field_compatible(i-j,delta,strand_overlap(&rows[i],&rows[j]));
+            }
+        }
+        regeneration_search(&r,0);
+    }
+    fprintf(out,"{\"schema\":\"forge.occlusion.v1\",\"source_kind\":\"native-c-verified-input\",\"producer_verified\":true,\"attestation\":\"none\",\"claim_class\":\"simulated\",\"privacy\":\"projection-only-not-network-anonymity\",\"policy\":{\"position_bins\":4,\"disclose\":\"bins-and-compatible-links-only\",\"hidden\":[\"exact_positions\",\"latencies\",\"boundaries\",\"event_hashes\"]},");
+    fprintf(out,"\"micro\":{\"count\":%d,\"bands\":[",n);
+    for(int i=0;i<n;i++){
+        int band=(int)(rows[i].origin_strand/4);
+        fprintf(out,"%s{\"slot\":%d,\"band\":%d,\"min\":%d,\"max\":%d}",i?",":"",i+1,band,band*4,band==4?16:band*4+3);
+    }
+    fprintf(out,"]},\"meso\":{\"compatible_edges\":[");
+    int printed=0;
+    for(int i=0;i<n;i++)for(int j=0;j<i;j++){
+        int delta=(int)(rows[j].origin_strand-rows[i].origin_strand);
+        if(field_compatible(i-j,delta,strand_overlap(&rows[i],&rows[j])))
+            fprintf(out,"%s[%d,%d]",printed++?",":"",i+1,j+1);
+    }
+    fprintf(out,"]},\"macro\":{\"regions\":%d,\"compatible_contacts\":%d},",regions,compatible_count);
+    fprintf(out,"\"regeneration\":{\"status\":\"%s\",\"candidate_count\":",n<=OCCLUSION_LIMIT?"enumerated":"not-enumerated");
+    if(n<=OCCLUSION_LIMIT)fprintf(out,"%llu",(unsigned long long)r.solutions);else fputs("null",out);
+    fprintf(out,",\"examples\":[");
+    for(uint64_t i=0;i<r.solutions&&i<OCCLUSION_EXAMPLES;i++){
+        fprintf(out,"%s[",i?",":"");
+        for(int j=0;j<n;j++)fprintf(out,"%s%d",j?",":"",r.examples[i][j]);
+        fputc(']',out);
+    }
+    fprintf(out,"]},\"limitations\":\"The published deterministic demo fixture is independently accessible; coarse projection alone cannot confer real confidentiality. Candidate examples are compatible possibilities, not recovered hidden truth.\"}\n");
+    free(parent);
+}
+static void replay(FILE *in,const char *outname,int mode){
     Omission *rows=calloc(MAX_EVENTS,sizeof(Omission));require(rows!=NULL,"record allocation failed");Complex k;complex_init(&k);
     char *line=NULL;size_t cap=0;ssize_t len;int n=0;uint32_t previous_receipt=UINT32_MAX;
     while((len=getline(&line,&cap,in))!=-1){
@@ -326,7 +408,7 @@ static void replay(FILE *in,const char *outname,int field_only){
     memset(counts,0,sizeof(counts));for(uint32_t i=0;i<k.n;i++)counts[k.items[i].dim]++;
     int comp=components(&k);int64_t chi=counts[0]-counts[1]+counts[2]-counts[3];
     if(outname){FILE *out=fopen(outname,"wb");require(out!=NULL,"failed to create topology output");topology_write(out,&k,rows,n);require(!ferror(out)&&fclose(out)==0,"failed writing topology output");}
-    if(field_only){field_write(stdout,rows,n,counts,1);complex_free(&k);free(rows);return;}
+    if(mode){if(mode==2)occlusion_write(stdout,rows,n);else field_write(stdout,rows,n,counts,1);complex_free(&k);free(rows);return;}
     printf("{\"schema\":\"forge.kernel.r0\",\"events\":%d,\"verified\":true,\"boundary_squared_zero\":true,\"vertices\":%lld,\"edges\":%lld,\"faces\":%lld,\"tetrahedra\":%lld,\"connected_components\":%d,\"euler_characteristic\":%lld,\"head\":",n,(long long)counts[0],(long long)counts[1],(long long)counts[2],(long long)counts[3],comp,(long long)chi);
     if(n)printf("\"%s\"",rows[n-1].digest);else printf("null");puts("}");
     complex_free(&k);free(rows);
@@ -340,6 +422,10 @@ static void simplex_cli(const char *arg){
 }
 int main(int argc,char **argv){
     if(argc==3&&!strcmp(argv[1],"simplex")){simplex_cli(argv[2]);return 0;}
+    if(argc==3&&!strcmp(argv[1],"occlude")){
+       FILE *in=!strcmp(argv[2],"-")?stdin:fopen(argv[2],"rb");require(in!=NULL,"cannot open JSONL input");
+       replay(in,NULL,2);if(in!=stdin)fclose(in);return 0;
+    }
     if(argc==3&&!strcmp(argv[1],"field")){
        FILE *in=!strcmp(argv[2],"-")?stdin:fopen(argv[2],"rb");require(in!=NULL,"cannot open JSONL input");
        replay(in,NULL,1);if(in!=stdin)fclose(in);return 0;
@@ -349,5 +435,5 @@ int main(int argc,char **argv){
        if(argc==5){require(!strcmp(argv[3],"--topology"),"expected --topology <path>");out=argv[4];require(strcmp(path,out)!=0,"input and topology output must be different files");}
        FILE *in=!strcmp(path,"-")?stdin:fopen(path,"rb");require(in!=NULL,"cannot open JSONL input");replay(in,out,0);if(in!=stdin)fclose(in);return 0;
     }
-    fprintf(stderr,"Usage: %s simplex 4,1,2,3\n       %s replay events.jsonl [--topology derived.jsonl]\n       %s field events.jsonl > field.json\n",argv[0],argv[0],argv[0]);return 2;
+    fprintf(stderr,"Usage: %s simplex 4,1,2,3\n       %s replay events.jsonl [--topology derived.jsonl]\n       %s field events.jsonl > field.json\n       %s occlude events.jsonl > occlusion-public.json\n",argv[0],argv[0],argv[0],argv[0]);return 2;
 }

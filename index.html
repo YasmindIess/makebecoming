@@ -17,20 +17,27 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 @media(max-width:960px){.space{grid-template-columns:minmax(0,1fr) 245px}aside{padding:10px}.brand{min-width:180px}header{padding:8px 12px}}
 @media(max-width:690px){.app{grid-template-rows:auto minmax(0,1fr) auto}.space{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,33%)}aside{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:auto;padding:8px 12px}aside h2,.hint,.divider{display:none}.kv{font-size:10px;grid-template-columns:70px minmax(0,1fr);gap:4px}.basin{padding:5px}.basin p{font-size:10px}header{gap:6px 10px}.brand{width:100%;margin:0}.brand strong{font-size:14px}.brand small{display:none}.ctl{font-size:10px}.ctl input[type=range]{width:74px}.actions{gap:3px}.actions button{padding:5px 7px;font-size:11px}footer{padding:4px 10px;min-height:29px}footer .note{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-.viz{isolation:isolate}svg[hidden],aside[hidden],.fieldbar[hidden]{display:none!important}
+.viz{isolation:isolate}svg[hidden],aside[hidden],.fieldbar[hidden],.occlusionbar[hidden]{display:none!important}
 .fieldbar{position:absolute;z-index:5;top:12px;right:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 12px;border:1px solid #49435d;border-radius:10px;background:rgba(11,12,27,.95);backdrop-filter:blur(9px);font-size:11px}
 .fieldbar label{display:flex;gap:5px;align-items:center;color:#d7ddf5}.fieldbar input{width:45px;padding:5px;border:1px solid #5b5a70;background:#191e30;border-radius:5px;color:white}.fieldbar select{max-width:160px}.fieldbar .confirmed{color:#90e6d7}
 .field-record{border:1px solid #494761;padding:11px;border-radius:9px;background:#181b31}.field-record b{color:var(--gold)}.field-record .mono{font:10px ui-monospace,monospace;overflow-wrap:anywhere;color:var(--cyan)}
 .field-stat{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field-stat div{background:#191d30;border:1px solid #373d51;padding:9px;border-radius:9px}.field-stat strong{display:block;font-size:19px;color:var(--gold);font-variant-numeric:tabular-nums}.field-stat small{color:#a9b3cb}
 @media(max-width:690px){.fieldbar{top:5px;right:5px;left:5px;padding:5px;gap:3px;font-size:9px}.fieldbar select{max-width:110px;font-size:10px}.fieldbar input{width:34px}.field-stat{display:none}.field-record{padding:4px;font-size:10px}}
+
+/* Chapter 6 — full-switch public projection and inverse-image view */
+.occlusionbar{position:absolute;z-index:5;top:12px;right:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 12px;border:1px solid #4c4771;border-radius:10px;background:rgba(11,12,27,.96);font-size:11px}
+.occlusionbar label{display:flex;align-items:center;gap:6px;color:#d7ddf5}.occlusionbar select{max-width:155px}.occlusionbar output{font-variant-numeric:tabular-nums;color:#eac587}
+.occlusionbar input[type=range]{width:135px;accent-color:#b59ae9}.occlusionbar .confirmed{color:#96ded4}
+.occlusion-stack{border:1px solid #514e69;border-radius:9px;background:#171a2d;padding:10px}.occlusion-stack strong{color:#eac481}.occlusion-stack p{margin:7px 0 0;font-size:11px;line-height:1.55;color:#aebbd3}
+@media(max-width:690px){.occlusionbar{top:5px;left:5px;right:5px;padding:6px;font-size:10px}.occlusionbar input[type=range]{width:75px}.occlusionbar select{max-width:95px}}
 </style>
 </head>
 <body>
 <div class="app">
 <header>
- <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.2 · NATIVE C MULTISCALE FIELD / RECONSTRUCTIBLE EVIDENCE</small></div>
+ <div class="brand"><strong>FORGE / CONFLUENT MINIMA</strong><small>V2.3 · NATIVE OCCLUSION / REGENERATION / RELATIONAL EVIDENCE</small></div>
  <div class="controls">
-  <label class="ctl">MODE <select id="screen"><option value="omission">OMISSION</option><option value="field">FIELD / MICRO→MACRO</option></select></label>
+  <label class="ctl">MODE <select id="screen"><option value="omission">OMISSION</option><option value="field">FIELD / MICRO→MACRO</option><option value="occlusion">OCCLUSION / REGEN</option></select></label>
   <label class="ctl">λ <input id="lat" type="range" min="0" max="100" value="43"><output id="latv">43</output></label>
   <label class="ctl">REGEN <input id="regen" type="range" min="0" max="100" value="62"><output id="regv">62</output></label>
   <label class="ctl">VIEW <select id="view"><option value="historical">Historical</option><option value="counterfactual">Counterfactual</option></select></label>
@@ -46,6 +53,11 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   <label>δ <input id="fieldDelta" type="number" value="3" min="-16" max="16" step="1"></label>
   <span class="confirmed" id="nativeStatus">Loading native field…</span>
  </div>
+ <div class="occlusionbar" id="occlusionToolbar" hidden>
+  <label>ORIGIN <select id="occlusionSource"><option value="native">Native C projection</option><option value="session">Current session</option></select></label>
+  <label>CANDIDATE <input id="occlusionCandidate" type="range" min="1" max="1" value="1"><output id="occlusionCandidateVal">1 / 1</output></label>
+  <span class="confirmed" id="occlusionStatus">Loading public-only data…</span>
+ </div>
  <svg id="scene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Omission origin, historical latency, first divergence, descendant trajectories and two calculated local minima">
  <defs><radialGradient id="bg"><stop stop-color="#1d1739"/><stop offset=".58" stop-color="#0d1020"/><stop offset="1" stop-color="#060811"/></radialGradient><linearGradient id="ribbon"><stop stop-color="#9b84db"/><stop offset=".52" stop-color="#ddac6a"/><stop offset="1" stop-color="#6bd6d0"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#8e8ca8" stroke-opacity=".12"/></pattern></defs>
  <rect width="1400" height="790" fill="url(#bg)"/><rect width="1400" height="790" fill="url(#grid)"/>
@@ -57,6 +69,15 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   <defs><radialGradient id="fieldBg"><stop stop-color="#1b183c"/><stop offset="1" stop-color="#080b16"/></radialGradient><filter id="fieldGlow"><feGaussianBlur stdDeviation="3.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
   <rect width="1400" height="790" fill="url(#fieldBg)"/>
   <g id="fieldArt"></g>
+ </svg>
+ <svg id="occlusionScene" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Coarse public field and multiple compatible reconstructed structures, with non-injective projection" hidden>
+  <defs>
+    <radialGradient id="occBg"><stop stop-color="#1b1439"/><stop offset="1" stop-color="#060b17"/></radialGradient>
+    <linearGradient id="occRoad"><stop stop-color="#e0b873"/><stop offset=".5" stop-color="#aa8fe3"/><stop offset="1" stop-color="#72d8cf"/></linearGradient>
+    <filter id="occGlow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1400" height="790" fill="url(#occBg)"/>
+  <g id="occlusionArt"></g>
  </svg>
  </section>
  <aside id="omissionInspector" aria-label="Evidence and computed minima inspector">
@@ -77,6 +98,19 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
   <div class="divider"></div><h3>MATHEMATICAL BOUNDARY</h3>
   <p class="hint">Micro nodes use generation = event sequence − 1 and position = origin strand. Meso edges compare earlier observed events. Macro regions are connected components under the published compatibility predicate, not claims of physical causation or quantum entanglement.</p>
   <p class="hint" id="fieldAttestation">The browser checks native-projected records against a SHA-256-verified fixture. Live session projections use the same declared rule in JavaScript and are not independently executed by C on Vercel.</p>
+ </aside>
+ <aside id="occlusionInspector" aria-label="Occlusion and regeneration inspector" hidden>
+  <h2>INSPECT / OCCLUSION</h2>
+  <div class="pill" id="occlusionProvenance">Awaiting C projection…</div>
+  <div class="occlusion-stack"><strong id="occlusionCount">—</strong><p>Compatible reconstructions of the released coarse field. These are candidates, not observations of hidden reality.</p></div>
+  <h3>PUBLIC REPRESENTATION</h3>
+  <div class="field-record" id="occlusionPublic">Exact coordinates, latency, event hashes and boundaries are omitted by this projection.</div>
+  <h3>SELECTED REGENERATION</h3>
+  <div class="field-record"><b id="occlusionHypothesis">—</b><p class="hint" id="occlusionExplain">Choose a candidate to compare another possible completion.</p></div>
+  <div class="divider"></div>
+  <h3>SECURITY / KNOWLEDGE BOUNDARY</h3>
+  <p class="hint" style="display:block">This is a mathematical occlusion demo, not a privacy guarantee. The original example fixture and its deterministic position rule are published elsewhere on this site. The public-only JSON is unsigned; its producer verification cannot be independently established from this projection alone.</p>
+  <p class="hint" style="display:block">No external quantum or qualia claims, anonymous proxying, or private-node isolation are implied.</p>
  </aside>
 </div>
 <footer><span class="log" id="status" role="status">Initializing local evidence engine…</span><span class="note">SVG is a projection of the journal · local browser execution only</span></footer>
@@ -257,25 +291,120 @@ function renderField(){
  else if(chosen){const q=d.micro.nodes[chosen.from-1],r=d.micro.nodes[chosen.to-1];$('fieldDetails').textContent='Event '+chosen.from+' ('+q.generation+','+q.position+') → event '+chosen.to+' ('+r.generation+','+r.position+') · invariant '+chosen.invariant+' · overlap '+chosen.overlap+' · '+(chosen.compatible?'COMPATIBLE':'comparison only');$('fieldCID').textContent='from '+q.event_cid.slice(0,23)+'… / to '+r.event_cid.slice(0,23)+'…';}
  else{$('fieldDetails').textContent='No contacts at the selected displacement. Try τ=2 and δ=3.';$('fieldCID').textContent=d.source_head??'';}
 }
-function switchScreen(){const mode=$('screen').value,field=mode==='field';$('scene').hidden=field;$('fieldScene').hidden=!field;$('fieldToolbar').hidden=!field;$('omissionInspector').hidden=field;$('fieldInspector').hidden=!field;if(field)renderField();else render();}
+
+/* Chapter 6: bounded inverse-image exploration of a coarse C projection.
+ * Candidate positions are hypotheses satisfying the disclosed relations.
+ * The full deterministic fixture is also on this site: this is not confidentiality.
+ */
+let nativeOcclusion=null,occlusionError=null,occlusionValidated=false;
+function enumerateProjection(d){
+ const slots=d.micro.bands,edges=new Set(d.meso.compatible_edges.map(x=>[Math.max(...x),Math.min(...x)].join(':'))),n=slots.length;
+ if(n>6)return {status:'not-enumerated',count:null,examples:[]};
+ const chosen=new Array(n),examples=[];let count=0;
+ function go(k){
+  if(k===n){count++;if(examples.length<6)examples.push([...chosen]);return;}
+  const b=slots[k];for(let x=b.min;x<=b.max;x++){
+   let valid=true;for(let j=0;j<k;j++){
+    const connected=k-j<=3&&Math.abs(x-chosen[j])<=6;
+    if(connected!==edges.has((k+1)+':'+(j+1))){valid=false;break;}
+   }
+   if(valid){chosen[k]=x;go(k+1);}
+  }
+ }
+ go(0);return {status:'enumerated',count,examples};
+}
+function validateOcclusion(d){
+ assert(d?.schema==='forge.occlusion.v1'&&d.claim_class==='simulated'&&d.micro&&d.meso&&d.regeneration,'Invalid occlusion projection');
+ assert(d.policy?.position_bins===4&&d.privacy==='projection-only-not-network-anonymity','Wrong projection policy');
+ const nodes=d.micro.bands,n=nodes.length;assert(n===d.micro.count&&n<=250,'Invalid node count');
+ for(let i=0;i<n;i++){const b=nodes[i];assert(b.slot===i+1&&Number.isInteger(b.min)&&Number.isInteger(b.max)&&b.min>=0&&b.max<=16&&b.min<=b.max&&b.max-b.min<=3,'Invalid positional interval');}
+ const used=new Set();for(const e of d.meso.compatible_edges){assert(Array.isArray(e)&&e.length===2&&e[0]>e[1]&&e[0]<=n&&e[1]>=1,'Malformed relation');let id=e.join(':');assert(!used.has(id),'Duplicate relation');used.add(id);}
+ assert(d.macro.compatible_contacts===used.size,'Wrong compatible count');
+ const parents=Array.from({length:n},(_,i)=>i);function find(i){while(parents[i]!==i)i=parents[i]=parents[parents[i]];return i;}
+ for(const [a,b] of d.meso.compatible_edges){const x=find(a-1),y=find(b-1);parents[x]=y;}
+ assert(new Set(parents.map((_,i)=>find(i))).size===d.macro.regions,'Region count mismatch');
+ const reconstructed=enumerateProjection(d);
+ assert(reconstructed.status===d.regeneration.status&&reconstructed.count===d.regeneration.candidate_count,'Native regeneration disagreement');
+ assert(JSON.stringify(reconstructed.examples)===JSON.stringify(d.regeneration.examples),'Native candidate samples disagree with browser');
+ return reconstructed;
+}
+async function loadOcclusion(){
+ try{
+  const response=await fetch('./occlusion-public.json',{cache:'no-store'});assert(response.ok,'Public projection unavailable');
+  const d=await response.json();validateOcclusion(d);nativeOcclusion=d;occlusionValidated=true;
+  $('occlusionStatus').textContent='C projection · inverse checked';
+  if($('screen').value==='occlusion')renderOcclusion();
+ }catch(err){occlusionError=err.message;$('occlusionStatus').textContent='Projection unavailable';if($('screen').value==='occlusion')renderOcclusion();}
+}
+function occlusionSession(){
+ const rows=records.slice(0,visible),n=rows.length,bands=rows.map((row,i)=>{const p=row.body.origin_strand,b=Math.floor(p/4);return {slot:i+1,band:b,min:4*b,max:Math.min(16,4*b+3)};});
+ const edges=[];for(let i=0;i<n;i++)for(let j=0;j<i;j++){
+  const p=rows[i].body.origin_strand,q=rows[j].body.origin_strand;
+  if(i-j<=3&&Math.abs(p-q)<=6)edges.push([i+1,j+1]);
+ }
+ const par=Array.from({length:n},(_,i)=>i);function rt(i){while(par[i]!==i)i=par[i]=par[par[i]];return i;}
+ for(const [a,b] of edges)par[rt(a-1)]=rt(b-1);
+ const regions=new Set(par.map((_,i)=>rt(i))).size;
+ const d={schema:'forge.occlusion.v1',source_kind:'browser-session-projection',claim_class:'simulated',privacy:'projection-only-not-network-anonymity',policy:{position_bins:4},micro:{count:n,bands},meso:{compatible_edges:edges},macro:{regions,compatible_contacts:edges.length}};
+ d.regeneration=(()=>{const r=enumerateProjection(d);return {status:r.status,candidate_count:r.count,examples:r.examples};})();return d;
+}
+function renderOcclusion(){
+ if($('screen').value!=='occlusion')return;
+ const isNative=$('occlusionSource').value==='native',d=isNative?nativeOcclusion:occlusionSession(),art=$('occlusionArt');art.replaceChildren();
+ const addText=(x,y,t,size=14,color='#d7dbef')=>{const e=svg('text',{x,y,fill:color,'font-size':size},art);e.textContent=t;return e;};
+ addText(52,64,'OCCLUSION / REGENERATION',25,'#eaca8d');addText(52,96,'A projection is not its hidden original.',13,'#a8acd0');
+ if(!d){addText(72,240,occlusionError||'Loading projection…',17,'#d5ad84');return;}
+ const n=d.micro.count,r=d.regeneration,candidates=r.examples;
+ const selector=$('occlusionCandidate'),max=Math.max(1,candidates.length);selector.max=String(max);selector.value=String(Math.min(Number(selector.value),max));
+ const which=Math.max(0,Math.min(candidates.length-1,Number(selector.value)-1)),candidate=candidates[which]??null;
+ $('occlusionCandidateVal').textContent=(candidates.length?which+1:0)+' / '+candidates.length;
+ $('occlusionStatus').textContent=isNative?(occlusionValidated?'C projection · inverse checked':'Native loading'):'JS session · no attestation';
+ $('occlusionProvenance').textContent=isNative?'Native C public-only output / locally checked':'Browser projection / simulated';
+ $('occlusionCount').textContent=r.candidate_count===null?'Bounded search unavailable':r.candidate_count+' compatible completions';
+ $('occlusionPublic').textContent=n+' coarse positional intervals · '+d.meso.compatible_edges.length+' compatible edges · '+d.macro.regions+' macro regions. Exact event origin positions remain absent from this projection.';
+ $('occlusionHypothesis').textContent=candidate?'Candidate '+(which+1)+': ('+candidate.join(', ')+')':'No sample candidate';
+ $('occlusionExplain').textContent=candidate?'One of '+r.candidate_count+' allowed inverse images; not a recovery of the historical original.':'More than six nodes: exhaustive inverse search intentionally not attempted.';
+ addText(65,149,'PUBLIC / COARSE OBSERVATION',16,'#d7b67b');addText(743,149,'REGENERATION / POSSIBLE INVERSE',16,'#a8ebdf');
+ svg('line',{x1:698,y1:160,x2:698,y2:698,stroke:'#b3a2cf','stroke-opacity':.35,'stroke-dasharray':'4 9'},art);
+ const maxRows=Math.min(n,12),coords=[];
+ for(let i=0;i<maxRows;i++){
+  const b=d.micro.bands[i],y=215+i*(410/Math.max(1,maxRows-1));coords.push(y);
+  svg('rect',{x:118,y:y-14,width:440,height:27,rx:12,fill:'#262441',stroke:'#7b699f','stroke-opacity':.6},art);
+  svg('rect',{x:118+b.min*25.8,y:y-14,width:Math.max(19,(b.max-b.min+1)*25.8),height:27,rx:8,fill:'#b39be3','fill-opacity':.45},art);
+  addText(61,y+5,'#'+b.slot,14,'#e2cf9e');addText(574,y+4,'p∈['+b.min+','+b.max+']',12,'#aab6d0');
+  if(candidate){const cx=837+candidate[i]*23.5;svg('line',{x1:837,y1:y,x2:1214,y2:y,stroke:'#4c6580','stroke-opacity':.6,'stroke-dasharray':'2 8'},art);
+   svg('circle',{cx,cy:y,r:10,fill:i%2?'#a995e2':'#e9c37d',stroke:'#f5e4c5','stroke-width':1.2},art);addText(1234,y+5,'p='+candidate[i],12,'#e6dbc9');}
+ }
+ for(const [a,b] of d.meso.compatible_edges){if(a>maxRows||b>maxRows)continue;
+  const ya=coords[a-1],yb=coords[b-1];svg('path',{d:`M 568 ${ya} C 670 ${ya} 670 ${yb} 568 ${yb}`,stroke:'#eac582','stroke-opacity':.8,'stroke-width':2.4,fill:'none'},art);
+  if(candidate){const xa=837+candidate[a-1]*23.5,xb=837+candidate[b-1]*23.5;svg('path',{d:`M ${xa} ${ya} C 1008 ${ya} 1008 ${yb} ${xb} ${yb}`,stroke:'url(#occRoad)','stroke-width':2.8,fill:'none',filter:'url(#occGlow)'},art);}
+ }
+ addText(60,705,'Multiple hidden states can share one visible structure',14,'#b2a6d6');
+ addText(745,705,r.candidate_count===null?'Search bounded for >6 nodes':r.candidate_count+' satisfying assignments',15,'#88ddcf');
+ addText(60,746,'SOURCE / '+(isNative?'NATIVE C · UNSIGNED PROJECTION':'BROWSER SESSION · JS DERIVED'),11,'#acb9d2');
+ addText(790,746,'NO UNIQUELY RECOVERED PRIVATE STATE',11,'#e4b67d');
+}
+function switchScreen(){const mode=$('screen').value,field=mode==='field',occ=mode==='occlusion';$('scene').toggleAttribute('hidden',field||occ);$('fieldScene').toggleAttribute('hidden',!field);$('occlusionScene').toggleAttribute('hidden',!occ);$('fieldToolbar').hidden=!field;$('occlusionToolbar').hidden=!occ;$('omissionInspector').hidden=field||occ;$('fieldInspector').hidden=!field;$('occlusionInspector').hidden=!occ;if(field)renderField();else if(occ)renderOcclusion();else render();}
 $('screen').onchange=switchScreen;
+$('occlusionSource').onchange=()=>{$('occlusionCandidate').value='1';renderOcclusion();};
+$('occlusionCandidate').oninput=renderOcclusion;
 for(const id of ['fieldSource','fieldTau','fieldDelta'])$(id).oninput=()=>{fieldSelected=null;renderField();};
 
 function pick(seq){visible=seq;seqSelected=seq;render();}
 async function append(){if(busy)return;busy=true;try{assert(records.length<MAX_EVENTS,'Journal is full');assert(!!crypto?.subtle,'SHA-256 requires HTTPS or localhost');const seq=records.length+1;const parent=records.at(-1)?.digest??null;
- const b=nextBody(seq,currentConfig(),parent,seq*1000);validateBody(b,seq,parent);const row={body:b,digest:await digest(b)};records=[...records,row];pick(seq);renderField();status('ADMITTED '+row.digest.slice(0,21)+'… · event '+seq+' · immutable historical boundary');}
+ const b=nextBody(seq,currentConfig(),parent,seq*1000);validateBody(b,seq,parent);const row={body:b,digest:await digest(b)};records=[...records,row];pick(seq);renderField();renderOcclusion();status('ADMITTED '+row.digest.slice(0,21)+'… · event '+seq+' · immutable historical boundary');}
  catch(e){status('ERROR: '+e.message);}finally{busy=false;render();}}
 function exportJournal(){const data=records.map(row=>canon(row)).join('\n')+(records.length?'\n':'');const url=URL.createObjectURL(new Blob([data],{type:'application/x-ndjson'}));const a=document.createElement('a');a.href=url;a.download='forge-v2_1-evidence.jsonl';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);status('Exported '+records.length+' event(s) as canonical subset JSONL');}
 async function importJournal(file){if(busy)return;busy=true;render();try{assert(file.size<3*1024*1024,'Import exceeds 3 MB');const text=await file.text();const lines=text.split(/\r?\n/).filter(s=>s.trim());assert(lines.length<=MAX_EVENTS,'Too many events');const candidate=lines.map((line,i)=>{try{return JSON.parse(line);}catch{throw Error('Invalid JSON line '+(i+1));}});
- await verifyRecords(candidate);records=candidate.map(row=>({body:Object.freeze(row.body),digest:row.digest}));$('view').value='historical';pick(records.length);renderField();status('IMPORTED & VERIFIED '+records.length+' canonical event(s) · cold replay succeeded');}
+ await verifyRecords(candidate);records=candidate.map(row=>({body:Object.freeze(row.body),digest:row.digest}));$('view').value='historical';pick(records.length);renderField();renderOcclusion();status('IMPORTED & VERIFIED '+records.length+' canonical event(s) · cold replay succeeded');}
  catch(e){status('IMPORT REJECTED: '+e.message);}finally{busy=false;$('file').value='';render();}}
 async function verify(){if(busy)return;busy=true;render();try{await verifyRecords(records);status('VERIFIED '+records.length+' records · canonical integer schema · SHA-256 parent chain');}catch(e){status('VERIFY FAILED: '+e.message);}finally{busy=false;render();}}
 $('step').onclick=append;$('export').onclick=exportJournal;$('import').onclick=()=>$('file').click();$('file').onchange=()=>{if($('file').files[0])importJournal($('file').files[0]);};$('verify').onclick=verify;
 $('prev').onclick=()=>{if(seqSelected>1)pick(seqSelected-1);};$('next').onclick=()=>{if(seqSelected<records.length)pick(seqSelected+1);};
-$('reset').onclick=()=>{if(records.length&&!confirm('Clear the local journal? Export JSONL first if you want to retain it.'))return;records=[];visible=0;seqSelected=0;$('view').value='historical';render();renderField();status('Local journal cleared; no browser persistence or network write');};
+$('reset').onclick=()=>{if(records.length&&!confirm('Clear the local journal? Export JSONL first if you want to retain it.'))return;records=[];visible=0;seqSelected=0;$('view').value='historical';render();renderField();renderOcclusion();status('Local journal cleared; no browser persistence or network write');};
 for(const id of ['lat','regen','view','basin'])$(id).oninput=render;
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.key==='ArrowLeft'&&seqSelected>1)pick(seqSelected-1);if(e.key==='ArrowRight'&&seqSelected<records.length)pick(seqSelected+1);});
-status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();loadNativeField();
+status(globalThis.crypto?.subtle?'READY · reproducible, SHA-256-addressed browser-local event engine':'Web Crypto SHA-256 unavailable: open from HTTPS or localhost');render();loadNativeField();loadOcclusion();
 })();
 </script>
 </body></html>
